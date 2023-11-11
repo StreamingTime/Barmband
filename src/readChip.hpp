@@ -9,6 +9,7 @@ const int LED_PIN = 26;
 
 MFRC522 rfid(SS_PIN, RST_PIN);
 
+const size_t TAG_ID_SIZE = 4;
 // Init array that will store new NUID
 byte nuidPICC[4];
 
@@ -87,25 +88,20 @@ void checkTarget()
     }
 }
 
-bool compareByteArrays(byte *array1, byte *array2)
-{
-    // TODO: refactor this since it only works for byte arrays of size 8
-    if (sizeof(array1) != sizeof(array2))
-    {
-        return false;
+/**
+ * Compare the first TAG_ID_SIZE bytes
+*/
+bool compareByteArrays(byte *array1, byte *array2) {
+
+  bool equal = true;
+
+  for (int i = 0; i < TAG_ID_SIZE && equal; i++) {
+    if (array1[i] != array2[i]) {
+      equal = false;
     }
+  }
 
-    bool equal = false;
-
-    for (int i = 0; i < sizeof(array1) && !equal; i++)
-    {
-        if (array1[i] == array2[i])
-        {
-            equal = true;
-        }
-    }
-
-    return equal;
+  return equal;
 }
 
 /**
