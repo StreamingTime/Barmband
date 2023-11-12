@@ -93,6 +93,11 @@ void WiFiEvent(WiFiEvent_t event) {
     }
 }
 
+void connectToWifi() {
+  
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+}
+
 void setup() {
   Serial.begin(9600);
 
