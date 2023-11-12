@@ -20,14 +20,7 @@ void onMqttConnect(bool sessionPresent) {
   uint16_t packetIdSub = mqttClient.subscribe(MQTT_TOPIC, 2);
   Serial.print("Subscribing at QoS 2, packetId: ");
   Serial.println(packetIdSub);
-  mqttClient.publish(MQTT_TOPIC, 0, true, "test 1");
-  Serial.println("Publishing at QoS 0");
-  uint16_t packetIdPub1 = mqttClient.publish(MQTT_TOPIC, 1, true, "test 2");
-  Serial.print("Publishing at QoS 1, packetId: ");
-  Serial.println(packetIdPub1);
-  uint16_t packetIdPub2 = mqttClient.publish(MQTT_TOPIC, 2, true, "test 3");
-  Serial.print("Publishing at QoS 2, packetId: ");
-  Serial.println(packetIdPub2);
+  mqttClient.publish(MQTT_TOPIC, 1, true, "Barmband connected to MQTT");
 }
 
 void onMqttDisconnect(AsyncMqttClientDisconnectReason reason) {
@@ -124,6 +117,17 @@ void setup() {
 }
 
 void loop() {
-  read();
+  String id = read();
+
+  if (id != "") {
+
+    char* buff = (char*)malloc(25);
+
+    sprintf(buff, "scanned tag %X%X%X%X", id[0],id[1],id[2],id[3]);
+
+    Serial.println(buff);
+    mqttClient.publish(MQTT_TOPIC, 1, true, buff);
+  }
+  
 }
 

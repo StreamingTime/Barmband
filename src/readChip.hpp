@@ -28,18 +28,18 @@ void init()
     pinMode(LED_PIN, OUTPUT);
 }
 
-void read()
+String read()
 {
     // Reset the loop if no new card present on the sensor/reader. This saves the entire process when idle.
     if (!rfid.PICC_IsNewCardPresent())
     {
-        return;
+        return "";
     }
 
     // Verify if the NUID has been readed
     if (!rfid.PICC_ReadCardSerial())
     {
-        return;
+        return "";
     }
 
     Serial.println(F("Tag has been detected."));
@@ -52,7 +52,7 @@ void read()
     if (piccType != MFRC522::PICC_TYPE_MIFARE_MINI && piccType != MFRC522::PICC_TYPE_MIFARE_1K && piccType != MFRC522::PICC_TYPE_MIFARE_4K)
     {
         Serial.println(F("Your tag is not of type MIFARE Classic."));
-        return;
+        return "";
     }
 
     // Store NUID into nuidPICC array
@@ -72,6 +72,8 @@ void read()
 
     // Stop encryption on PCD
     rfid.PCD_StopCrypto1();
+
+    return String(nuidPICC, TAG_ID_SIZE);
 }
 
 void checkTarget()
