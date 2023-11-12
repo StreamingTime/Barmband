@@ -68,6 +68,9 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
   Serial.println(index);
   Serial.print("  total: ");
   Serial.println(total);
+  
+  String msg(payload, len);
+  Serial.println(msg);
 }
 
 void onMqttPublish(uint16_t packetId) {
