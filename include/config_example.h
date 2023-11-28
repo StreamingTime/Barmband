@@ -6,4 +6,4 @@
 #define MQTT_HOST IPAddress(192, 168, 2, 133)
 #define MQTT_PORT 8083
 
-const char* MQTT_TOPIC = "barmband/test";
+const char *MQTT_TOPIC = "barmband/test";

@@ -92,18 +92,21 @@ void checkTarget()
 
 /**
  * Compare the first TAG_ID_SIZE bytes
-*/
-bool compareByteArrays(byte *array1, byte *array2) {
+ */
+bool compareByteArrays(byte *array1, byte *array2)
+{
 
-  bool equal = true;
+    bool equal = true;
 
-  for (int i = 0; i < TAG_ID_SIZE && equal; i++) {
-    if (array1[i] != array2[i]) {
-      equal = false;
+    for (int i = 0; i < TAG_ID_SIZE && equal; i++)
+    {
+        if (array1[i] != array2[i])
+        {
+            equal = false;
+        }
     }
-  }
 
-  return equal;
+    return equal;
 }
 
 /**
