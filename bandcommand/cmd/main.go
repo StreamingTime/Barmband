@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
+	"gitlab.hs-flensburg.de/flar3845/barmband/bandcommand/messaging"
 	"log"
 	"os"
 	"time"
@@ -16,6 +17,8 @@ var f mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
 const MqttBroker = "test.mosquitto.org"
 const MqttPort = "1883"
 const MqttTopic = "barmband/test"
+
+const SetupTopic = "barmband/setup"
 
 func makeConnectionString(host string, port string) string {
 	return fmt.Sprintf("tcp://%s:%s", host, port)
@@ -47,6 +50,25 @@ func main() {
 	}
 
 	if token := client.Subscribe(MqttTopic, 0, nil); token.Wait() && token.Error() != nil {
+		log.Fatalf("Failed to subscribe to topic: %s", token.Error())
+	}
+
+	token := client.Subscribe(SetupTopic, 0, func(client mqtt.Client, message mqtt.Message) {
+
+		fmt.Println(message)
+		messageString := string(message.Payload())
+		msg, err := messaging.ParseMessage(messageString)
+
+		if err != nil {
+			log.Printf("Failed to parse message '%s': %s\n", messageString, err)
+		} else {
+			fmt.Printf("Got message: %v", msg)
+		}
+
+	})
+	token.Wait()
+
+	if token.Error() != nil {
 		log.Fatalf("Failed to subscribe to topic: %s", token.Error())
 	}
 
