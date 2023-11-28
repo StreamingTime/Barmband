@@ -1,21 +1,20 @@
-#include "Arduino.h"
-#include <WiFi.h>
 #include <AsyncMqttClient.h>
-#include "readChip.hpp"
+#include <WiFi.h>
+
+#include "Arduino.h"
 #include "config.h"
+#include "readChip.hpp"
 
 AsyncMqttClient mqttClient;
 TimerHandle_t mqttReconnectTimer;
 TimerHandle_t wifiReconnectTimer;
 
-void connectToMqtt()
-{
+void connectToMqtt() {
   Serial.println("Connecting to MQTT...");
   mqttClient.connect();
 }
 
-void onMqttConnect(bool sessionPresent)
-{
+void onMqttConnect(bool sessionPresent) {
   Serial.println("Connected to MQTT.");
   Serial.print("Session present: ");
   Serial.println(sessionPresent);
@@ -25,18 +24,15 @@ void onMqttConnect(bool sessionPresent)
   mqttClient.publish(MQTT_TOPIC, 1, true, "Barmband connected to MQTT");
 }
 
-void onMqttDisconnect(AsyncMqttClientDisconnectReason reason)
-{
+void onMqttDisconnect(AsyncMqttClientDisconnectReason reason) {
   Serial.printf("Disconnected from MQTT: %d\n", reason);
 
-  if (WiFi.isConnected())
-  {
+  if (WiFi.isConnected()) {
     xTimerStart(mqttReconnectTimer, 0);
   }
 }
 
-void onMqttSubscribe(uint16_t packetId, uint8_t qos)
-{
+void onMqttSubscribe(uint16_t packetId, uint8_t qos) {
   Serial.println("Subscribe acknowledged.");
   Serial.print("  packetId: ");
   Serial.println(packetId);
@@ -44,15 +40,15 @@ void onMqttSubscribe(uint16_t packetId, uint8_t qos)
   Serial.println(qos);
 }
 
-void onMqttUnsubscribe(uint16_t packetId)
-{
+void onMqttUnsubscribe(uint16_t packetId) {
   Serial.println("Unsubscribe acknowledged.");
   Serial.print("  packetId: ");
   Serial.println(packetId);
 }
 
-void onMqttMessage(char *topic, char *payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total)
-{
+void onMqttMessage(char *topic, char *payload,
+                   AsyncMqttClientMessageProperties properties, size_t len,
+                   size_t index, size_t total) {
   Serial.println("Publish received.");
   Serial.print("  topic: ");
   Serial.println(topic);
@@ -73,44 +69,42 @@ void onMqttMessage(char *topic, char *payload, AsyncMqttClientMessageProperties 
   Serial.println(msg);
 }
 
-void onMqttPublish(uint16_t packetId)
-{
+void onMqttPublish(uint16_t packetId) {
   Serial.println("Publish acknowledged.");
   Serial.print("  packetId: ");
   Serial.println(packetId);
 }
 
-void WiFiEvent(WiFiEvent_t event)
-{
+void WiFiEvent(WiFiEvent_t event) {
   Serial.printf("[WiFi-event] event: %d\n", event);
-  switch (event)
-  {
-  case SYSTEM_EVENT_STA_GOT_IP:
-    Serial.println("WiFi connected");
-    Serial.println("IP address: ");
-    Serial.println(WiFi.localIP());
-    connectToMqtt();
-    break;
-  case SYSTEM_EVENT_STA_DISCONNECTED:
-    Serial.println("WiFi lost connection");
-    xTimerStop(mqttReconnectTimer, 0); // ensure we don't reconnect to MQTT while reconnecting to Wi-Fi
-    xTimerStart(wifiReconnectTimer, 0);
-    break;
+  switch (event) {
+    case SYSTEM_EVENT_STA_GOT_IP:
+      Serial.println("WiFi connected");
+      Serial.println("IP address: ");
+      Serial.println(WiFi.localIP());
+      connectToMqtt();
+      break;
+    case SYSTEM_EVENT_STA_DISCONNECTED:
+      Serial.println("WiFi lost connection");
+      xTimerStop(
+          mqttReconnectTimer,
+          0);  // ensure we don't reconnect to MQTT while reconnecting to Wi-Fi
+      xTimerStart(wifiReconnectTimer, 0);
+      break;
   }
 }
 
-void connectToWifi()
-{
+void connectToWifi() { WiFi.begin(WIFI_SSID, WIFI_PASSWORD); }
 
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-}
-
-void setup()
-{
+void setup() {
   Serial.begin(9600);
 
-  mqttReconnectTimer = xTimerCreate("mqttTimer", pdMS_TO_TICKS(2000), pdFALSE, (void *)0, reinterpret_cast<TimerCallbackFunction_t>(connectToMqtt));
-  wifiReconnectTimer = xTimerCreate("wifiTimer", pdMS_TO_TICKS(2000), pdFALSE, (void *)0, reinterpret_cast<TimerCallbackFunction_t>(connectToWifi));
+  mqttReconnectTimer =
+      xTimerCreate("mqttTimer", pdMS_TO_TICKS(2000), pdFALSE, (void *)0,
+                   reinterpret_cast<TimerCallbackFunction_t>(connectToMqtt));
+  wifiReconnectTimer =
+      xTimerCreate("wifiTimer", pdMS_TO_TICKS(2000), pdFALSE, (void *)0,
+                   reinterpret_cast<TimerCallbackFunction_t>(connectToWifi));
 
   WiFi.onEvent(WiFiEvent);
 
@@ -127,13 +121,10 @@ void setup()
   init();
 }
 
-void loop()
-{
+void loop() {
   String id = read();
 
-  if (id != "")
-  {
-
+  if (id != "") {
     char *buff = (char *)malloc(25);
 
     sprintf(buff, "scanned tag %X%X%X%X", id[0], id[1], id[2], id[3]);
