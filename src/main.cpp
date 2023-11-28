@@ -91,15 +91,20 @@ void onMqttMessage(char *topic, char *payload,
 
   String msg(payload, len);
 
-  if (topic == "setup") {
-    mqttClient.publish("setup", 1, true, "setup");
+  if (strcmp(topic, "setup") == 0) {
+    //msg should contain basic setup stuff (whatever that could be)
+    Serial.println(msg);
   }
 
-  else if (topic == "scan") {
-    Serial.println("topic scan");
+  if (strcmp(topic, "matchmaking") == 0) {
+    //msg should contain two IDs who are then searching for each other
     Serial.println(msg);
+  }
 
-    mqttClient.publish("scan", 1, true, "scan");
+  if (strcmp(topic, "scan") == 0) {
+    //msg should contain two IDs who just matched
+    //these IDs should not match again in the future
+    Serial.println(msg);
   }
   // Serial.println(msg);
 }
