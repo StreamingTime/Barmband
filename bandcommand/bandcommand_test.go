@@ -19,11 +19,13 @@ func Test_defaultMessageHandler(t *testing.T) {
 		bandId := barmband.BarmbandId([]byte{1, 2, 3, 4})
 
 		setupMsg := messaging.SetupMessage{BarmbandId: bandId}
+		setupMsg2 := messaging.SetupMessage{BarmbandId: barmband.BarmbandId([]byte{5, 5, 5, 5})}
 		notSetupMessage := 1
 
-		mockBc.EXPECT().HandleMessage(setupMsg).Times(1)
+		mockBc.EXPECT().HandleSetupMessage(gomock.Any()).Times(2)
 
 		defaultMessageHandler(mockBc, setupMsg)
+		defaultMessageHandler(mockBc, &setupMsg2)
 		defaultMessageHandler(mockBc, notSetupMessage)
 	})
 }
@@ -36,7 +38,7 @@ func TestBandCommand_handleSetupMessage(t *testing.T) {
 
 	setupMsg := messaging.SetupMessage{BarmbandId: bandId}
 
-	bc.handleSetupMessage(setupMsg)
+	bc.HandleSetupMessage(&setupMsg)
 
 	assert.Len(t, bc.barmbands, 1)
 	assert.Equal(t, bandId, bc.barmbands[0].Id)

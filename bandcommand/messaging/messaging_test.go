@@ -14,9 +14,9 @@ func Test_ParseSetupMessage(t *testing.T) {
 
 		msg, err := parseSetupMessage(rawMessage)
 
+		setupMsg := msg.(*SetupMessage)
 		assert.Nil(t, err)
-		assert.Len(t, msg.barmbandId, 4)
-		assert.Equal(t, barmband.BarmbandId([]byte{0x12, 0x34, 0x56, 0x78}), msg.barmbandId)
+		assert.Equal(t, barmband.BarmbandId([]byte{0x12, 0x34, 0x56, 0x78}), setupMsg.BarmbandId)
 	})
 }
 

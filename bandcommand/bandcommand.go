@@ -9,6 +9,7 @@ import (
 
 type BandCommand interface {
 	HandleMessage(msg messaging.Message)
+	HandleSetupMessage(msg *messaging.SetupMessage)
 }
 
 type DefaultBandCommand struct {
@@ -28,14 +29,22 @@ func (bc *DefaultBandCommand) HandleMessage(msg messaging.Message) {
 }
 
 func defaultMessageHandler(bc BandCommand, msg messaging.Message) {
+
 	switch msg.(type) {
 	case messaging.SetupMessage:
 		fmt.Println("got setup message")
-		bc.HandleMessage(msg)
+		var setupMessage messaging.SetupMessage = msg.(messaging.SetupMessage)
+		bc.HandleSetupMessage(&setupMessage)
+	case *messaging.SetupMessage:
+		fmt.Println("got setup message")
+		var setupMessage *messaging.SetupMessage = msg.(*messaging.SetupMessage)
+		bc.HandleSetupMessage(setupMessage)
+	default:
+		fmt.Printf("Unknown message: %T\n", msg)
 	}
 }
 
-func (bc *DefaultBandCommand) handleSetupMessage(setupMessage messaging.SetupMessage) {
+func (bc *DefaultBandCommand) HandleSetupMessage(setupMessage *messaging.SetupMessage) {
 
 	idAlreadyRegistered := slices.ContainsFunc(bc.barmbands, func(b barmband.Barmband) bool {
 		return b.Id == setupMessage.BarmbandId
@@ -46,5 +55,6 @@ func (bc *DefaultBandCommand) handleSetupMessage(setupMessage messaging.SetupMes
 		bc.barmbands = append(bc.barmbands, barmband.Barmband{
 			Id: setupMessage.BarmbandId,
 		})
+		fmt.Printf("registered band %v\n", setupMessage.BarmbandId)
 	}
 }
