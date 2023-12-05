@@ -15,9 +15,15 @@ type SetupMessage struct {
 	BarmbandId barmband.BarmbandId
 }
 
+type PairFoundMessage struct {
+	FirstBarmbandId  barmband.BarmbandId
+	SecondBarmbandId barmband.BarmbandId
+}
+
 type messageParser func(string) (Message, error)
 
 const SetupMessagePrefix = "Hello"
+const PairFoundMessagePrefix = "Pair found"
 
 var UnknownMessageError = errors.New("unknown message")
 var EmptyBandId = errors.New("EmptyBandId")
@@ -52,6 +58,26 @@ func parseSetupMessage(message string) (Message, error) {
 	}
 	return &SetupMessage{
 		BarmbandId: barmband.BarmbandId(stringToBytes(bandId)),
+	}, nil
+}
+
+func parsePairFoundMessage(message string) (Message, error) {
+
+	pairFoundMessageFormat := fmt.Sprintf("%s %%s %%s", PairFoundMessagePrefix)
+
+	var firstBandId string
+	var secondBandId string
+	_, err := fmt.Sscanf(message, pairFoundMessageFormat, &firstBandId, &secondBandId)
+
+	if err != nil {
+		return nil, err
+	}
+	if firstBandId == "" || secondBandId == "" {
+		return nil, EmptyBandId
+	}
+	return &PairFoundMessage{
+		FirstBarmbandId:  barmband.BarmbandId(stringToBytes(firstBandId)),
+		SecondBarmbandId: barmband.BarmbandId(stringToBytes(secondBandId)),
 	}, nil
 }
 
