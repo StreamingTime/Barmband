@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
+	"gitlab.hs-flensburg.de/flar3845/barmband/bandcommand"
+	"gitlab.hs-flensburg.de/flar3845/barmband/bandcommand/barmband"
 	"gitlab.hs-flensburg.de/flar3845/barmband/bandcommand/messaging"
 	"log"
 	"os"
@@ -44,6 +46,8 @@ func connectMqtt(host string, port string) (mqtt.Client, error) {
 
 func main() {
 
+	bc := bandcommand.New()
+
 	client, err := connectMqtt(MqttBroker, MqttPort)
 	if err != nil {
 		log.Fatalf("Failed to connect to MQTT broker: %s", err)
@@ -62,7 +66,8 @@ func main() {
 		if err != nil {
 			log.Printf("Failed to parse message '%s': %s\n", messageString, err)
 		} else {
-			fmt.Printf("Got message: %v", msg)
+			fmt.Printf("Got message: %v\n", msg)
+			bc.HandleMessage(msg)
 		}
 
 	})
@@ -72,11 +77,8 @@ func main() {
 		log.Fatalf("Failed to subscribe to topic: %s", token.Error())
 	}
 
-	for i := 0; i < 5; i++ {
-		text := fmt.Sprintf("this is msg #%d!", i)
-		token := client.Publish(MqttTopic, 0, false, text)
-		token.Wait()
-	}
+	bc.HandleMessage(messaging.SetupMessage{barmband.BarmbandId([]byte{1, 2, 3, 4})})
+	bc.HandleMessage(&messaging.SetupMessage{barmband.BarmbandId([]byte{5, 5, 5, 5})})
 
 	select {}
 }
