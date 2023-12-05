@@ -8,10 +8,11 @@ import (
 	"strings"
 )
 
-type Message = SetupMessage
+type Message interface {
+}
 
 type SetupMessage struct {
-	barmbandId barmband.BarmbandId
+	BarmbandId barmband.BarmbandId
 }
 
 type messageParser func(string) (Message, error)
@@ -33,10 +34,10 @@ func ParseMessage(message string) (Message, error) {
 		}
 	}
 
-	return Message{}, UnknownMessageError
+	return nil, UnknownMessageError
 }
 
-func parseSetupMessage(message string) (SetupMessage, error) {
+func parseSetupMessage(message string) (Message, error) {
 
 	helloMessageFormat := fmt.Sprintf("%s %%s", SetupMessagePrefix)
 
@@ -44,13 +45,13 @@ func parseSetupMessage(message string) (SetupMessage, error) {
 	_, err := fmt.Sscanf(message, helloMessageFormat, &bandId)
 
 	if err != nil {
-		return SetupMessage{}, err
+		return nil, err
 	}
 	if bandId == "" {
-		return SetupMessage{}, EmptyBandId
+		return nil, EmptyBandId
 	}
-	return SetupMessage{
-		barmbandId: barmband.BarmbandId(stringToBytes(bandId)),
+	return &SetupMessage{
+		BarmbandId: barmband.BarmbandId(stringToBytes(bandId)),
 	}, nil
 }
 
