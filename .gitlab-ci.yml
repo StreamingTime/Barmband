@@ -33,4 +33,4 @@ deploy website:
   rules:
     # The job will run only when files in /website are changed
     - changes:
-      - /website/**
+      - /website/**/*
