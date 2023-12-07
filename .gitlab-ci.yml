@@ -1,0 +1,36 @@
+image: alpine:latest
+
+variables:
+  GIT_SUBMODULE_STRATEGY: recursive
+
+deploy website:
+  timeout: 15 minutes
+  script:
+    # Add SSH client to be able to connect to the server
+    - apk update
+    - apk add --no-cache hugo rsync openssh-client nodejs npm gcompat libc6-compat
+    - ln -s /lib/libc.so.6 /usr/lib/libresolv.so.2
+
+    # Add the SSH key and known hosts
+    - mkdir -p ~/.ssh
+    - echo "$RSYNC_KNOWN_HOSTS" >> ~/.ssh/known_hosts
+    - echo "$RSYNC_PRIVATE_KEY" > ~/.ssh/key
+    - chmod -R 700 ~/.ssh
+    - eval "$(ssh-agent -s)"
+    - ssh-add ~/.ssh/key
+
+    # Install the dependencies
+    - cd ./website
+    - npm ci
+
+    # Build the website
+    # We need to build the website twice because of an undicovered bug
+    - npm run build
+    - npm run build
+
+    # Transfer the website to the server
+    - rsync -crtvz --delete ./public/ $RSYNC_SERVER_USERNAME@$RSYNC_SERVER_URL:/var/www/hs-flensburg.de/html/
+  rules:
+    # The job will run only when files in /website are changed
+    - changes:
+      - /website/**
