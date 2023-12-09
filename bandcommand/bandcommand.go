@@ -5,6 +5,7 @@ import (
 	"gitlab.hs-flensburg.de/flar3845/barmband/bandcommand/barmband"
 	"gitlab.hs-flensburg.de/flar3845/barmband/bandcommand/messaging"
 	"slices"
+	"sync"
 )
 
 type BandCommand interface {
@@ -16,9 +17,11 @@ type BandCommand interface {
 }
 
 type DefaultBandCommand struct {
+	barmbandsMutex sync.RWMutex
 	barmbands      []barmband.Barmband
 	messageHandler func(bc BandCommand, msg messaging.Message)
 	pairs          []barmband.Pair
+	pairsMutex     sync.RWMutex
 }
 
 func New() *DefaultBandCommand {
@@ -30,6 +33,9 @@ func New() *DefaultBandCommand {
 
 // GetBand returns a pointer to the band with the given id, or nil if there is no band with this id
 func (bc *DefaultBandCommand) GetBand(id barmband.BarmbandId) *barmband.Barmband {
+	bc.barmbandsMutex.RLock()
+	defer bc.barmbandsMutex.RUnlock()
+
 	i := slices.IndexFunc(bc.barmbands, func(b barmband.Barmband) bool {
 		return b.Id == id
 	})
@@ -80,6 +86,9 @@ func defaultMessageHandler(bc BandCommand, msg messaging.Message) {
 
 func (bc *DefaultBandCommand) HandleSetupMessage(setupMessage *messaging.SetupMessage) {
 
+	bc.barmbandsMutex.Lock()
+	defer bc.barmbandsMutex.Unlock()
+
 	idAlreadyRegistered := slices.ContainsFunc(bc.barmbands, func(b barmband.Barmband) bool {
 		return b.Id == setupMessage.BarmbandId
 	})
@@ -94,6 +103,9 @@ func (bc *DefaultBandCommand) HandleSetupMessage(setupMessage *messaging.SetupMe
 }
 
 func (bc *DefaultBandCommand) HandlePairFoundMessage(message *messaging.PairFoundMessage) {
+	bc.pairsMutex.Lock()
+	defer bc.pairsMutex.Unlock()
+
 	i := slices.IndexFunc(bc.pairs, func(p barmband.Pair) bool {
 		return (p.First == message.FirstBarmbandId && p.Second == message.SecondBarmbandId) || (p.First == message.SecondBarmbandId && p.Second == message.FirstBarmbandId)
 	})
@@ -113,6 +125,9 @@ func (bc *DefaultBandCommand) HandlePairFoundMessage(message *messaging.PairFoun
 }
 
 func (bc *DefaultBandCommand) HandleAbortMessage(message *messaging.AbortMessage) {
+
+	bc.pairsMutex.Lock()
+	defer bc.pairsMutex.Unlock()
 
 	i := slices.IndexFunc(bc.pairs, func(pair barmband.Pair) bool {
 		return pair.First == message.BarmbandId || pair.Second == message.BarmbandId
