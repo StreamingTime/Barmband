@@ -58,6 +58,7 @@ func TestBandCommand_HandlePairFoundMessage(t *testing.T) {
 
 		bandA := barmband.BarmbandId([]byte{1, 2, 3, 4})
 		bandB := barmband.BarmbandId([]byte{5, 5, 5, 5})
+		bandC := barmband.BarmbandId([]byte{12, 12, 12, 12})
 
 		type testCase struct {
 			name   string
@@ -81,6 +82,12 @@ func TestBandCommand_HandlePairFoundMessage(t *testing.T) {
 			t.Run(tc.name, func(t *testing.T) {
 				bc := New()
 
+				bc.barmbands = []barmband.Barmband{
+					barmband.NewBarmband(bandA),
+					barmband.NewBarmband(bandB),
+					barmband.NewBarmband(bandC),
+				}
+
 				bc.pairs = append(bc.pairs, barmband.NewPair(tc.first, tc.second))
 
 				pairFoundMsg := messaging.PairFoundMessage{FirstBarmbandId: tc.first, SecondBarmbandId: tc.second}
@@ -88,6 +95,10 @@ func TestBandCommand_HandlePairFoundMessage(t *testing.T) {
 				bc.HandlePairFoundMessage(&pairFoundMsg)
 
 				assert.Len(t, bc.pairs, 0)
+
+				assert.Equal(t, 1, bc.GetBand(tc.first).FoundPairs)
+				assert.Equal(t, 1, bc.GetBand(tc.second).FoundPairs)
+				assert.Equal(t, 0, bc.GetBand(bandC).FoundPairs)
 			})
 
 		}
@@ -102,6 +113,12 @@ func TestBandCommand_HandlePairFoundMessage(t *testing.T) {
 
 		bc := New()
 
+		bc.barmbands = []barmband.Barmband{
+			barmband.NewBarmband(bandA),
+			barmband.NewBarmband(bandB),
+			barmband.NewBarmband(bandC),
+		}
+
 		// Match: A and B
 		bc.pairs = append(bc.pairs, barmband.NewPair(bandA, bandB))
 
@@ -112,6 +129,26 @@ func TestBandCommand_HandlePairFoundMessage(t *testing.T) {
 
 		assert.Len(t, bc.pairs, 1)
 
+		for _, b := range bc.barmbands {
+			assert.Equal(t, 0, b.FoundPairs)
+		}
+
 	})
 
+}
+
+func TestDefaultBandCommand_GetBand(t *testing.T) {
+	bandA := barmband.BarmbandId([]byte{1, 2, 3, 4})
+	bandB := barmband.BarmbandId([]byte{5, 5, 5, 5})
+	bandC := barmband.BarmbandId([]byte{12, 12, 12, 12})
+
+	bc := New()
+
+	bc.barmbands = []barmband.Barmband{
+		barmband.NewBarmband(bandA),
+		barmband.NewBarmband(bandB),
+	}
+
+	assert.Equal(t, bandB, bc.GetBand(bandB).Id)
+	assert.Nil(t, bc.GetBand(bandC))
 }

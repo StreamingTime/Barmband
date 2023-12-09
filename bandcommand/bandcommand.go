@@ -11,6 +11,7 @@ type BandCommand interface {
 	HandleMessage(msg messaging.Message)
 	HandleSetupMessage(msg *messaging.SetupMessage)
 	HandlePairFoundMessage(message *messaging.PairFoundMessage)
+	GetBand(id barmband.BarmbandId) *barmband.Barmband
 }
 
 type DefaultBandCommand struct {
@@ -24,6 +25,19 @@ func New() *DefaultBandCommand {
 		barmbands:      make([]barmband.Barmband, 0),
 		messageHandler: defaultMessageHandler,
 	}
+}
+
+// GetBand returns a pointer to the band with the given id, or nil if there is no band with this id
+func (bc *DefaultBandCommand) GetBand(id barmband.BarmbandId) *barmband.Barmband {
+	i := slices.IndexFunc(bc.barmbands, func(b barmband.Barmband) bool {
+		return b.Id == id
+	})
+
+	if i < 0 {
+		return nil
+	}
+
+	return &bc.barmbands[i]
 }
 
 func (bc *DefaultBandCommand) HandleMessage(msg messaging.Message) {
@@ -79,6 +93,12 @@ func (bc *DefaultBandCommand) HandlePairFoundMessage(message *messaging.PairFoun
 		fmt.Println("No pair found")
 		return
 	}
+
+	bandA := bc.GetBand(message.FirstBarmbandId)
+	bandB := bc.GetBand(message.SecondBarmbandId)
+
+	bandA.FoundPairs++
+	bandB.FoundPairs++
 
 	bc.pairs = append(bc.pairs[:i], bc.pairs[i+1:]...)
 }
