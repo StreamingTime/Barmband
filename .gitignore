@@ -1,3 +1,6 @@
+**/_mocks/**/*.go
+!**/_mocks/gen.go
+
 include/config.h
 
 .idea
