@@ -11,6 +11,7 @@ type BandCommand interface {
 	HandleMessage(msg messaging.Message)
 	HandleSetupMessage(msg *messaging.SetupMessage)
 	HandlePairFoundMessage(message *messaging.PairFoundMessage)
+	HandleAbortMessage(message *messaging.AbortMessage)
 	GetBand(id barmband.BarmbandId) *barmband.Barmband
 }
 
@@ -63,6 +64,14 @@ func defaultMessageHandler(bc BandCommand, msg messaging.Message) {
 		fmt.Println("Got pair found message")
 		var pairFoundMessage *messaging.PairFoundMessage = msg.(*messaging.PairFoundMessage)
 		bc.HandlePairFoundMessage(pairFoundMessage)
+	case messaging.AbortMessage:
+		fmt.Println("Got abort message")
+		var abortMessage messaging.AbortMessage = msg.(messaging.AbortMessage)
+		bc.HandleAbortMessage(&abortMessage)
+	case *messaging.AbortMessage:
+		fmt.Println("Got abort message")
+		var abortMessage *messaging.AbortMessage = msg.(*messaging.AbortMessage)
+		bc.HandleAbortMessage(abortMessage)
 
 	default:
 		fmt.Printf("Unknown message: %T\n", msg)
@@ -99,6 +108,19 @@ func (bc *DefaultBandCommand) HandlePairFoundMessage(message *messaging.PairFoun
 
 	bandA.FoundPairs++
 	bandB.FoundPairs++
+
+	bc.pairs = append(bc.pairs[:i], bc.pairs[i+1:]...)
+}
+
+func (bc *DefaultBandCommand) HandleAbortMessage(message *messaging.AbortMessage) {
+
+	i := slices.IndexFunc(bc.pairs, func(pair barmband.Pair) bool {
+		return pair.First == message.BarmbandId || pair.Second == message.BarmbandId
+	})
+
+	if i < 0 {
+		return
+	}
 
 	bc.pairs = append(bc.pairs[:i], bc.pairs[i+1:]...)
 }

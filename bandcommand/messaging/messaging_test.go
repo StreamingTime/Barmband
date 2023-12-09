@@ -43,3 +43,16 @@ func Test_StringToBytes(t *testing.T) {
 
 	assert.Equal(t, []byte{0x12, 0x34, 0x56, 0x78}, out)
 }
+
+func Test_parseAbortMessage(t *testing.T) {
+	t.Run("converts raw message to struct", func(t *testing.T) {
+
+		rawMessage := "Abort AAAAAAAA"
+
+		msg, err := parseAbortMessage(rawMessage)
+
+		abortMessage := msg.(*AbortMessage)
+		assert.Nil(t, err)
+		assert.Equal(t, barmband.BarmbandId([]byte{0xAA, 0xAA, 0xAA, 0xAA}), abortMessage.BarmbandId)
+	})
+}

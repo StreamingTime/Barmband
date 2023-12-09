@@ -20,10 +20,15 @@ type PairFoundMessage struct {
 	SecondBarmbandId barmband.BarmbandId
 }
 
+type AbortMessage struct {
+	BarmbandId barmband.BarmbandId
+}
+
 type messageParser func(string) (Message, error)
 
 const SetupMessagePrefix = "Hello"
 const PairFoundMessagePrefix = "Pair found"
+const AbortMessagePrefix = "Abort"
 
 var UnknownMessageError = errors.New("unknown message")
 var EmptyBandId = errors.New("EmptyBandId")
@@ -32,6 +37,7 @@ var EmptyBandId = errors.New("EmptyBandId")
 var messageParsers = map[string]messageParser{
 	SetupMessagePrefix:     parseSetupMessage,
 	PairFoundMessagePrefix: parsePairFoundMessage,
+	AbortMessagePrefix:     parseAbortMessage,
 }
 
 // ParseMessage tries to convert a string into a Message using the parser configured in messageParsers
@@ -81,6 +87,24 @@ func parsePairFoundMessage(message string) (Message, error) {
 	return &PairFoundMessage{
 		FirstBarmbandId:  barmband.BarmbandId(stringToBytes(firstBandId)),
 		SecondBarmbandId: barmband.BarmbandId(stringToBytes(secondBandId)),
+	}, nil
+}
+
+func parseAbortMessage(message string) (Message, error) {
+
+	abortMessageFormat := fmt.Sprintf("%s %%s", AbortMessagePrefix)
+
+	var bandId string
+	_, err := fmt.Sscanf(message, abortMessageFormat, &bandId)
+
+	if err != nil {
+		return nil, err
+	}
+	if bandId == "" {
+		return nil, EmptyBandId
+	}
+	return &AbortMessage{
+		BarmbandId: barmband.BarmbandId(stringToBytes(bandId)),
 	}, nil
 }
 
