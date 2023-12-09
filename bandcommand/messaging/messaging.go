@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"gitlab.hs-flensburg.de/flar3845/barmband/bandcommand/barmband"
-	"strconv"
 	"strings"
 )
 
@@ -66,7 +65,7 @@ func parseSetupMessage(message string) (Message, error) {
 		return nil, EmptyBandId
 	}
 	return &SetupMessage{
-		BarmbandId: barmband.BarmbandId(stringToBytes(bandId)),
+		BarmbandId: barmband.IdFromString(bandId),
 	}, nil
 }
 
@@ -85,8 +84,8 @@ func parsePairFoundMessage(message string) (Message, error) {
 		return nil, EmptyBandId
 	}
 	return &PairFoundMessage{
-		FirstBarmbandId:  barmband.BarmbandId(stringToBytes(firstBandId)),
-		SecondBarmbandId: barmband.BarmbandId(stringToBytes(secondBandId)),
+		FirstBarmbandId:  barmband.IdFromString(firstBandId),
+		SecondBarmbandId: barmband.IdFromString(secondBandId),
 	}, nil
 }
 
@@ -104,17 +103,6 @@ func parseAbortMessage(message string) (Message, error) {
 		return nil, EmptyBandId
 	}
 	return &AbortMessage{
-		BarmbandId: barmband.BarmbandId(stringToBytes(bandId)),
+		BarmbandId: barmband.IdFromString(bandId),
 	}, nil
-}
-
-// stringToBytes converts  the string "1234" to the byte slice []byte{0x12, 0x34}
-func stringToBytes(s string) []byte {
-	bytes := make([]byte, 0, len(s)/2)
-	for i := 0; i < len(s); i += 2 {
-		num, _ := strconv.ParseUint(s[i:i+2], 16, 8)
-		bytes = append(bytes, byte(num))
-	}
-	fmt.Printf("%X\n", bytes)
-	return bytes
 }

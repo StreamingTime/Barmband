@@ -35,15 +35,6 @@ func Test_ParsePairFoundMessage(t *testing.T) {
 	})
 }
 
-func Test_StringToBytes(t *testing.T) {
-
-	input := "12345678"
-
-	out := stringToBytes(input)
-
-	assert.Equal(t, []byte{0x12, 0x34, 0x56, 0x78}, out)
-}
-
 func Test_parseAbortMessage(t *testing.T) {
 	t.Run("converts raw message to struct", func(t *testing.T) {
 
