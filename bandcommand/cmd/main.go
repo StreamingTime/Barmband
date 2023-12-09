@@ -4,7 +4,6 @@ import (
 	"fmt"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"gitlab.hs-flensburg.de/flar3845/barmband/bandcommand"
-	"gitlab.hs-flensburg.de/flar3845/barmband/bandcommand/barmband"
 	"gitlab.hs-flensburg.de/flar3845/barmband/bandcommand/messaging"
 	"log"
 	"os"
@@ -76,9 +75,6 @@ func main() {
 	if token.Error() != nil {
 		log.Fatalf("Failed to subscribe to topic: %s", token.Error())
 	}
-
-	bc.HandleMessage(messaging.SetupMessage{barmband.BarmbandId([]byte{1, 2, 3, 4})})
-	bc.HandleMessage(&messaging.SetupMessage{barmband.BarmbandId([]byte{5, 5, 5, 5})})
 
 	select {}
 }
