@@ -9,6 +9,10 @@ import (
 	"testing"
 )
 
+var bandIdA = barmband.BarmbandId([]byte{0xAA, 0xAA, 0xAA, 0xAA})
+var bandIdB = barmband.BarmbandId([]byte{0xBB, 0xBB, 0xBB, 0xBB})
+var bandIdC = barmband.BarmbandId([]byte{0xCC, 0xCC, 0xCC, 0xCC})
+
 func Test_defaultMessageHandler(t *testing.T) {
 
 	t.Run("routes messages correctly", func(t *testing.T) {
@@ -16,18 +20,16 @@ func Test_defaultMessageHandler(t *testing.T) {
 		mockCtrl := gomock.NewController(t)
 		mockBc := mock_bandcommand.NewMockBandCommand(mockCtrl)
 
-		bandId := barmband.BarmbandId([]byte{1, 2, 3, 4})
+		setupMsg := messaging.SetupMessage{BarmbandId: bandIdA}
+		setupMsg2 := messaging.SetupMessage{BarmbandId: bandIdB}
 
-		setupMsg := messaging.SetupMessage{BarmbandId: bandId}
-		setupMsg2 := messaging.SetupMessage{BarmbandId: barmband.BarmbandId([]byte{5, 5, 5, 5})}
-
-		abortMsg := messaging.AbortMessage{BarmbandId: bandId}
+		abortMsg := messaging.AbortMessage{BarmbandId: bandIdA}
 
 		notSetupMessage := 1
 
 		pairFoundMessage := messaging.PairFoundMessage{
-			FirstBarmbandId:  barmband.BarmbandId([]byte{0xa, 0xa, 0xa, 0xa}),
-			SecondBarmbandId: barmband.BarmbandId([]byte{0xb, 0xb, 0xb, 0xb}),
+			FirstBarmbandId:  bandIdA,
+			SecondBarmbandId: bandIdB,
 		}
 		mockBc.EXPECT().HandleSetupMessage(gomock.Any()).Times(2)
 		mockBc.EXPECT().HandlePairFoundMessage(&pairFoundMessage).Times(2)
@@ -48,24 +50,18 @@ func TestBandCommand_handleSetupMessage(t *testing.T) {
 
 	bc := New()
 
-	bandId := barmband.BarmbandId([]byte{1, 2, 3, 4})
-
-	setupMsg := messaging.SetupMessage{BarmbandId: bandId}
+	setupMsg := messaging.SetupMessage{BarmbandId: bandIdA}
 
 	bc.HandleSetupMessage(&setupMsg)
 
 	assert.Len(t, bc.barmbands, 1)
-	assert.Equal(t, bandId, bc.barmbands[0].Id)
+	assert.Equal(t, bandIdA, bc.barmbands[0].Id)
 
 }
 
 func TestBandCommand_HandlePairFoundMessage(t *testing.T) {
 
 	t.Run("handles existing match with different band order", func(t *testing.T) {
-
-		bandA := barmband.BarmbandId([]byte{1, 2, 3, 4})
-		bandB := barmband.BarmbandId([]byte{5, 5, 5, 5})
-		bandC := barmband.BarmbandId([]byte{12, 12, 12, 12})
 
 		type testCase struct {
 			name   string
@@ -75,13 +71,13 @@ func TestBandCommand_HandlePairFoundMessage(t *testing.T) {
 		testCases := []testCase{
 			{
 				name:   "A,B",
-				first:  bandA,
-				second: bandB,
+				first:  bandIdA,
+				second: bandIdB,
 			},
 			{
 				name:   "B,A",
-				first:  bandB,
-				second: bandA,
+				first:  bandIdB,
+				second: bandIdA,
 			},
 		}
 
@@ -90,9 +86,9 @@ func TestBandCommand_HandlePairFoundMessage(t *testing.T) {
 				bc := New()
 
 				bc.barmbands = []barmband.Barmband{
-					barmband.NewBarmband(bandA),
-					barmband.NewBarmband(bandB),
-					barmband.NewBarmband(bandC),
+					barmband.NewBarmband(bandIdA),
+					barmband.NewBarmband(bandIdB),
+					barmband.NewBarmband(bandIdC),
 				}
 
 				bc.pairs = append(bc.pairs, barmband.NewPair(tc.first, tc.second))
@@ -105,7 +101,7 @@ func TestBandCommand_HandlePairFoundMessage(t *testing.T) {
 
 				assert.Equal(t, 1, bc.GetBand(tc.first).FoundPairs)
 				assert.Equal(t, 1, bc.GetBand(tc.second).FoundPairs)
-				assert.Equal(t, 0, bc.GetBand(bandC).FoundPairs)
+				assert.Equal(t, 0, bc.GetBand(bandIdC).FoundPairs)
 			})
 
 		}
@@ -114,23 +110,19 @@ func TestBandCommand_HandlePairFoundMessage(t *testing.T) {
 
 	t.Run("ignores non existent matches", func(t *testing.T) {
 
-		bandA := barmband.BarmbandId([]byte{1, 2, 3, 4})
-		bandB := barmband.BarmbandId([]byte{5, 5, 5, 5})
-		bandC := barmband.BarmbandId([]byte{12, 12, 12, 12})
-
 		bc := New()
 
 		bc.barmbands = []barmband.Barmband{
-			barmband.NewBarmband(bandA),
-			barmband.NewBarmband(bandB),
-			barmband.NewBarmband(bandC),
+			barmband.NewBarmband(bandIdA),
+			barmband.NewBarmband(bandIdB),
+			barmband.NewBarmband(bandIdC),
 		}
 
 		// Match: A and B
-		bc.pairs = append(bc.pairs, barmband.NewPair(bandA, bandB))
+		bc.pairs = append(bc.pairs, barmband.NewPair(bandIdA, bandIdB))
 
 		// Message reports match A and C
-		pairFoundMsg := messaging.PairFoundMessage{FirstBarmbandId: bandA, SecondBarmbandId: bandC}
+		pairFoundMsg := messaging.PairFoundMessage{FirstBarmbandId: bandIdA, SecondBarmbandId: bandIdC}
 
 		bc.HandlePairFoundMessage(&pairFoundMsg)
 
@@ -148,10 +140,6 @@ func TestBandCommand_HandleAbortMessage(t *testing.T) {
 
 	t.Run("handles existing match with different band order", func(t *testing.T) {
 
-		bandA := barmband.BarmbandId([]byte{1, 2, 3, 4})
-		bandB := barmband.BarmbandId([]byte{5, 5, 5, 5})
-		bandC := barmband.BarmbandId([]byte{12, 12, 12, 12})
-
 		type testCase struct {
 			name   string
 			bandId barmband.BarmbandId
@@ -159,11 +147,11 @@ func TestBandCommand_HandleAbortMessage(t *testing.T) {
 		testCases := []testCase{
 			{
 				name:   "A",
-				bandId: bandA,
+				bandId: bandIdA,
 			},
 			{
 				name:   "B",
-				bandId: bandB,
+				bandId: bandIdB,
 			},
 		}
 
@@ -172,15 +160,15 @@ func TestBandCommand_HandleAbortMessage(t *testing.T) {
 				bc := New()
 
 				bc.barmbands = []barmband.Barmband{
-					barmband.NewBarmband(bandA),
-					barmband.NewBarmband(bandB),
-					barmband.NewBarmband(bandC),
+					barmband.NewBarmband(bandIdA),
+					barmband.NewBarmband(bandIdB),
+					barmband.NewBarmband(bandIdC),
 				}
 
 				bc.pairs = []barmband.Pair{
 					{
-						First:  bandA,
-						Second: bandB,
+						First:  bandIdA,
+						Second: bandIdB,
 					},
 				}
 
@@ -197,23 +185,19 @@ func TestBandCommand_HandleAbortMessage(t *testing.T) {
 
 	t.Run("ignores abort when band has no match", func(t *testing.T) {
 
-		bandA := barmband.BarmbandId([]byte{1, 2, 3, 4})
-		bandB := barmband.BarmbandId([]byte{5, 5, 5, 5})
-		bandC := barmband.BarmbandId([]byte{12, 12, 12, 12})
-
 		bc := New()
 
 		bc.barmbands = []barmband.Barmband{
-			barmband.NewBarmband(bandA),
-			barmband.NewBarmband(bandB),
-			barmband.NewBarmband(bandC),
+			barmband.NewBarmband(bandIdA),
+			barmband.NewBarmband(bandIdB),
+			barmband.NewBarmband(bandIdC),
 		}
 
 		// Match: A and B
-		bc.pairs = append(bc.pairs, barmband.NewPair(bandA, bandB))
+		bc.pairs = append(bc.pairs, barmband.NewPair(bandIdA, bandIdB))
 
 		// Message reports match A and C
-		abortMsg := messaging.AbortMessage{BarmbandId: bandC}
+		abortMsg := messaging.AbortMessage{BarmbandId: bandIdC}
 
 		bc.HandleAbortMessage(&abortMsg)
 
@@ -224,17 +208,14 @@ func TestBandCommand_HandleAbortMessage(t *testing.T) {
 }
 
 func TestDefaultBandCommand_GetBand(t *testing.T) {
-	bandA := barmband.BarmbandId([]byte{1, 2, 3, 4})
-	bandB := barmband.BarmbandId([]byte{5, 5, 5, 5})
-	bandC := barmband.BarmbandId([]byte{12, 12, 12, 12})
 
 	bc := New()
 
 	bc.barmbands = []barmband.Barmband{
-		barmband.NewBarmband(bandA),
-		barmband.NewBarmband(bandB),
+		barmband.NewBarmband(bandIdA),
+		barmband.NewBarmband(bandIdB),
 	}
 
-	assert.Equal(t, bandB, bc.GetBand(bandB).Id)
-	assert.Nil(t, bc.GetBand(bandC))
+	assert.Equal(t, bandIdB, bc.GetBand(bandIdB).Id)
+	assert.Nil(t, bc.GetBand(bandIdC))
 }
