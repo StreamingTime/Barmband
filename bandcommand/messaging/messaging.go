@@ -28,10 +28,13 @@ const PairFoundMessagePrefix = "Pair found"
 var UnknownMessageError = errors.New("unknown message")
 var EmptyBandId = errors.New("EmptyBandId")
 
+// messageParsers maps a message prefix to a messageParser
 var messageParsers = map[string]messageParser{
-	SetupMessagePrefix: parseSetupMessage,
+	SetupMessagePrefix:     parseSetupMessage,
+	PairFoundMessagePrefix: parsePairFoundMessage,
 }
 
+// ParseMessage tries to convert a string into a Message using the parser configured in messageParsers
 func ParseMessage(message string) (Message, error) {
 
 	for prefix, parser := range messageParsers {
