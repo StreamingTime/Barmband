@@ -1,5 +1,6 @@
 # Barmband
 
+[Graphical messaging and communication overview](https://www.tldraw.com/v/N9df8NquTPFi5-Oo25JAq?viewport=-170,48,1920,963&page=page:page)
 ## Prerequisites
 
 ### MQTT broker
