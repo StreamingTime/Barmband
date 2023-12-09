@@ -22,11 +22,18 @@ func Test_defaultMessageHandler(t *testing.T) {
 		setupMsg2 := messaging.SetupMessage{BarmbandId: barmband.BarmbandId([]byte{5, 5, 5, 5})}
 		notSetupMessage := 1
 
+		pairFoundMessage := messaging.PairFoundMessage{
+			FirstBarmbandId:  barmband.BarmbandId([]byte{0xa, 0xa, 0xa, 0xa}),
+			SecondBarmbandId: barmband.BarmbandId([]byte{0xb, 0xb, 0xb, 0xb}),
+		}
 		mockBc.EXPECT().HandleSetupMessage(gomock.Any()).Times(2)
+		mockBc.EXPECT().HandlePairFoundMessage(&pairFoundMessage).Times(2)
 
 		defaultMessageHandler(mockBc, setupMsg)
 		defaultMessageHandler(mockBc, &setupMsg2)
 		defaultMessageHandler(mockBc, notSetupMessage)
+		defaultMessageHandler(mockBc, pairFoundMessage)
+		defaultMessageHandler(mockBc, &pairFoundMessage)
 	})
 }
 
@@ -42,5 +49,69 @@ func TestBandCommand_handleSetupMessage(t *testing.T) {
 
 	assert.Len(t, bc.barmbands, 1)
 	assert.Equal(t, bandId, bc.barmbands[0].Id)
+
+}
+
+func TestBandCommand_HandlePairFoundMessage(t *testing.T) {
+
+	t.Run("handles existing match with different band order", func(t *testing.T) {
+
+		bandA := barmband.BarmbandId([]byte{1, 2, 3, 4})
+		bandB := barmband.BarmbandId([]byte{5, 5, 5, 5})
+
+		type testCase struct {
+			name   string
+			first  barmband.BarmbandId
+			second barmband.BarmbandId
+		}
+		testCases := []testCase{
+			{
+				name:   "A,B",
+				first:  bandA,
+				second: bandB,
+			},
+			{
+				name:   "B,A",
+				first:  bandB,
+				second: bandA,
+			},
+		}
+
+		for _, tc := range testCases {
+			t.Run(tc.name, func(t *testing.T) {
+				bc := New()
+
+				bc.pairs = append(bc.pairs, barmband.NewPair(tc.first, tc.second))
+
+				pairFoundMsg := messaging.PairFoundMessage{FirstBarmbandId: tc.first, SecondBarmbandId: tc.second}
+
+				bc.HandlePairFoundMessage(&pairFoundMsg)
+
+				assert.Len(t, bc.pairs, 0)
+			})
+
+		}
+
+	})
+
+	t.Run("ignores non existent matches", func(t *testing.T) {
+
+		bandA := barmband.BarmbandId([]byte{1, 2, 3, 4})
+		bandB := barmband.BarmbandId([]byte{5, 5, 5, 5})
+		bandC := barmband.BarmbandId([]byte{12, 12, 12, 12})
+
+		bc := New()
+
+		// Match: A and B
+		bc.pairs = append(bc.pairs, barmband.NewPair(bandA, bandB))
+
+		// Message reports match A and C
+		pairFoundMsg := messaging.PairFoundMessage{FirstBarmbandId: bandA, SecondBarmbandId: bandC}
+
+		bc.HandlePairFoundMessage(&pairFoundMsg)
+
+		assert.Len(t, bc.pairs, 1)
+
+	})
 
 }
