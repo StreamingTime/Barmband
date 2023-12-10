@@ -3,9 +3,9 @@ package messaging
 import (
 	"errors"
 	"fmt"
-	"gitlab.hs-flensburg.de/flar3845/barmband/bandcommand/barmband"
-	"strconv"
 	"strings"
+
+	"gitlab.hs-flensburg.de/flar3845/barmband/bandcommand/barmband"
 )
 
 type Message interface {
@@ -20,18 +20,32 @@ type PairFoundMessage struct {
 	SecondBarmbandId barmband.BarmbandId
 }
 
+type AbortMessage struct {
+	BarmbandId barmband.BarmbandId
+}
+
+type RequestPartnerMessage struct {
+	BarmbandId barmband.BarmbandId
+}
+
 type messageParser func(string) (Message, error)
 
 const SetupMessagePrefix = "Hello"
 const PairFoundMessagePrefix = "Pair found"
+const AbortMessagePrefix = "Abort"
+const RequestPartnerPrefix = "Request partner"
 
 var UnknownMessageError = errors.New("unknown message")
 var EmptyBandId = errors.New("EmptyBandId")
 
+// messageParsers maps a message prefix to a messageParser
 var messageParsers = map[string]messageParser{
-	SetupMessagePrefix: parseSetupMessage,
+	SetupMessagePrefix:     parseSetupMessage,
+	PairFoundMessagePrefix: parsePairFoundMessage,
+	AbortMessagePrefix:     parseAbortMessage,
 }
 
+// ParseMessage tries to convert a string into a Message using the parser configured in messageParsers
 func ParseMessage(message string) (Message, error) {
 
 	for prefix, parser := range messageParsers {
@@ -47,17 +61,22 @@ func parseSetupMessage(message string) (Message, error) {
 
 	helloMessageFormat := fmt.Sprintf("%s %%s", SetupMessagePrefix)
 
-	var bandId string
-	_, err := fmt.Sscanf(message, helloMessageFormat, &bandId)
+	var bandIdS string
+	_, err := fmt.Sscanf(message, helloMessageFormat, &bandIdS)
 
 	if err != nil {
 		return nil, err
 	}
-	if bandId == "" {
+	if bandIdS == "" {
 		return nil, EmptyBandId
 	}
+
+	bandId, err := barmband.IdFromString(bandIdS)
+	if err != nil {
+		return nil, err
+	}
 	return &SetupMessage{
-		BarmbandId: barmband.BarmbandId(stringToBytes(bandId)),
+		BarmbandId: bandId,
 	}, nil
 }
 
@@ -65,29 +84,76 @@ func parsePairFoundMessage(message string) (Message, error) {
 
 	pairFoundMessageFormat := fmt.Sprintf("%s %%s %%s", PairFoundMessagePrefix)
 
-	var firstBandId string
-	var secondBandId string
-	_, err := fmt.Sscanf(message, pairFoundMessageFormat, &firstBandId, &secondBandId)
+	var firstBandIdS string
+	var secondBandIdS string
+	_, err := fmt.Sscanf(message, pairFoundMessageFormat, &firstBandIdS, &secondBandIdS)
 
 	if err != nil {
 		return nil, err
 	}
-	if firstBandId == "" || secondBandId == "" {
+	if firstBandIdS == "" || secondBandIdS == "" {
 		return nil, EmptyBandId
 	}
+
+	firstBandId, err := barmband.IdFromString(firstBandIdS)
+	if err != nil {
+		return nil, err
+	}
+
+	secondBandId, err := barmband.IdFromString(secondBandIdS)
+	if err != nil {
+		return nil, err
+	}
+
 	return &PairFoundMessage{
-		FirstBarmbandId:  barmband.BarmbandId(stringToBytes(firstBandId)),
-		SecondBarmbandId: barmband.BarmbandId(stringToBytes(secondBandId)),
+		FirstBarmbandId:  firstBandId,
+		SecondBarmbandId: secondBandId,
 	}, nil
 }
 
-// stringToBytes converts  the string "1234" to the byte slice []byte{0x12, 0x34}
-func stringToBytes(s string) []byte {
-	bytes := make([]byte, 0, len(s)/2)
-	for i := 0; i < len(s); i += 2 {
-		num, _ := strconv.ParseUint(s[i:i+2], 16, 8)
-		bytes = append(bytes, byte(num))
+func parseAbortMessage(message string) (Message, error) {
+
+	abortMessageFormat := fmt.Sprintf("%s %%s", AbortMessagePrefix)
+
+	var bandIdS string
+	_, err := fmt.Sscanf(message, abortMessageFormat, &bandIdS)
+
+	if err != nil {
+		return nil, err
 	}
-	fmt.Printf("%X\n", bytes)
-	return bytes
+	if bandIdS == "" {
+		return nil, EmptyBandId
+	}
+
+	bandId, err := barmband.IdFromString(bandIdS)
+	if err != nil {
+		return nil, err
+	}
+	return &AbortMessage{
+		BarmbandId: bandId,
+	}, nil
+}
+
+func parseRequestPartnerMessage(message string) (Message, error) {
+
+	requestPartnerMessageFormat := fmt.Sprintf("%s %%s", RequestPartnerPrefix)
+
+	var bandIdS string
+	_, err := fmt.Sscanf(message, requestPartnerMessageFormat, &bandIdS)
+
+	if err != nil {
+		return nil, err
+	}
+	if bandIdS == "" {
+		return nil, EmptyBandId
+	}
+
+	bandId, err := barmband.IdFromString(bandIdS)
+	if err != nil {
+		return nil, err
+	}
+
+	return &RequestPartnerMessage{
+		BarmbandId: bandId,
+	}, nil
 }

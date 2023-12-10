@@ -2,21 +2,28 @@ package bandcommand
 
 import (
 	"fmt"
+	"slices"
+	"sync"
+
 	"gitlab.hs-flensburg.de/flar3845/barmband/bandcommand/barmband"
 	"gitlab.hs-flensburg.de/flar3845/barmband/bandcommand/messaging"
-	"slices"
 )
 
 type BandCommand interface {
 	HandleMessage(msg messaging.Message)
 	HandleSetupMessage(msg *messaging.SetupMessage)
 	HandlePairFoundMessage(message *messaging.PairFoundMessage)
+	HandleAbortMessage(message *messaging.AbortMessage)
+	HandleRequestPartnerMessage(message *messaging.RequestPartnerMessage)
+	GetBand(id barmband.BarmbandId) *barmband.Barmband
 }
 
 type DefaultBandCommand struct {
+	barmbandsMutex sync.RWMutex
 	barmbands      []barmband.Barmband
 	messageHandler func(bc BandCommand, msg messaging.Message)
 	pairs          []barmband.Pair
+	pairsMutex     sync.RWMutex
 }
 
 func New() *DefaultBandCommand {
@@ -26,29 +33,53 @@ func New() *DefaultBandCommand {
 	}
 }
 
+// GetBand returns a pointer to the band with the given id, or nil if there is no band with this id
+func (bc *DefaultBandCommand) GetBand(id barmband.BarmbandId) *barmband.Barmband {
+	bc.barmbandsMutex.RLock()
+	defer bc.barmbandsMutex.RUnlock()
+
+	i := slices.IndexFunc(bc.barmbands, func(b barmband.Barmband) bool {
+		return b.Id == id
+	})
+
+	if i < 0 {
+		return nil
+	}
+
+	return &bc.barmbands[i]
+}
+
 func (bc *DefaultBandCommand) HandleMessage(msg messaging.Message) {
 	bc.messageHandler(bc, msg)
 }
 
 func defaultMessageHandler(bc BandCommand, msg messaging.Message) {
 
-	switch msg.(type) {
+	switch msg := msg.(type) {
 	case messaging.SetupMessage:
 		fmt.Println("got setup message")
-		var setupMessage messaging.SetupMessage = msg.(messaging.SetupMessage)
-		bc.HandleSetupMessage(&setupMessage)
+		bc.HandleSetupMessage(&msg)
 	case *messaging.SetupMessage:
 		fmt.Println("got setup message")
-		var setupMessage *messaging.SetupMessage = msg.(*messaging.SetupMessage)
-		bc.HandleSetupMessage(setupMessage)
+		bc.HandleSetupMessage(msg)
 	case messaging.PairFoundMessage:
 		fmt.Println("Got pair found message")
-		var pairFoundMessage messaging.PairFoundMessage = msg.(messaging.PairFoundMessage)
-		bc.HandlePairFoundMessage(&pairFoundMessage)
+		bc.HandlePairFoundMessage(&msg)
 	case *messaging.PairFoundMessage:
 		fmt.Println("Got pair found message")
-		var pairFoundMessage *messaging.PairFoundMessage = msg.(*messaging.PairFoundMessage)
-		bc.HandlePairFoundMessage(pairFoundMessage)
+		bc.HandlePairFoundMessage(msg)
+	case messaging.AbortMessage:
+		fmt.Println("Got abort message")
+		bc.HandleAbortMessage(&msg)
+	case *messaging.AbortMessage:
+		fmt.Println("Got abort message")
+		bc.HandleAbortMessage(msg)
+	case messaging.RequestPartnerMessage:
+		fmt.Println("Got request partner message")
+		bc.HandleRequestPartnerMessage(&msg)
+	case *messaging.RequestPartnerMessage:
+		fmt.Println("Got request partner message")
+		bc.HandleRequestPartnerMessage(msg)
 
 	default:
 		fmt.Printf("Unknown message: %T\n", msg)
@@ -56,6 +87,9 @@ func defaultMessageHandler(bc BandCommand, msg messaging.Message) {
 }
 
 func (bc *DefaultBandCommand) HandleSetupMessage(setupMessage *messaging.SetupMessage) {
+
+	bc.barmbandsMutex.Lock()
+	defer bc.barmbandsMutex.Unlock()
 
 	idAlreadyRegistered := slices.ContainsFunc(bc.barmbands, func(b barmband.Barmband) bool {
 		return b.Id == setupMessage.BarmbandId
@@ -71,6 +105,9 @@ func (bc *DefaultBandCommand) HandleSetupMessage(setupMessage *messaging.SetupMe
 }
 
 func (bc *DefaultBandCommand) HandlePairFoundMessage(message *messaging.PairFoundMessage) {
+	bc.pairsMutex.Lock()
+	defer bc.pairsMutex.Unlock()
+
 	i := slices.IndexFunc(bc.pairs, func(p barmband.Pair) bool {
 		return (p.First == message.FirstBarmbandId && p.Second == message.SecondBarmbandId) || (p.First == message.SecondBarmbandId && p.Second == message.FirstBarmbandId)
 	})
@@ -80,5 +117,49 @@ func (bc *DefaultBandCommand) HandlePairFoundMessage(message *messaging.PairFoun
 		return
 	}
 
+	bandA := bc.GetBand(message.FirstBarmbandId)
+	bandB := bc.GetBand(message.SecondBarmbandId)
+
+	bandA.FoundPairs++
+	bandB.FoundPairs++
+
 	bc.pairs = append(bc.pairs[:i], bc.pairs[i+1:]...)
+}
+
+func (bc *DefaultBandCommand) HandleAbortMessage(message *messaging.AbortMessage) {
+
+	bc.pairsMutex.Lock()
+	defer bc.pairsMutex.Unlock()
+
+	i := slices.IndexFunc(bc.pairs, func(pair barmband.Pair) bool {
+		return pair.First == message.BarmbandId || pair.Second == message.BarmbandId
+	})
+
+	if i < 0 {
+		return
+	}
+
+	bc.pairs = append(bc.pairs[:i], bc.pairs[i+1:]...)
+}
+
+func (bc *DefaultBandCommand) HandleRequestPartnerMessage(message *messaging.RequestPartnerMessage) {
+	if !bc.isRegistered(message.BarmbandId) {
+		return
+	}
+
+	if bc.hasMatch(message.BarmbandId) {
+		return
+	}
+
+	// TODO: matchmaking magic
+}
+
+func (bc *DefaultBandCommand) isRegistered(barmbandId barmband.BarmbandId) bool {
+	return bc.GetBand(barmbandId) != nil
+}
+
+func (bc *DefaultBandCommand) hasMatch(barmbandId barmband.BarmbandId) bool {
+	return slices.ContainsFunc(bc.pairs, func(pair barmband.Pair) bool {
+		return pair.First == barmbandId || pair.Second == barmbandId
+	})
 }

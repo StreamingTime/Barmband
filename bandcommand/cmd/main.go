@@ -2,13 +2,13 @@ package main
 
 import (
 	"fmt"
-	mqtt "github.com/eclipse/paho.mqtt.golang"
-	"gitlab.hs-flensburg.de/flar3845/barmband/bandcommand"
-	"gitlab.hs-flensburg.de/flar3845/barmband/bandcommand/barmband"
-	"gitlab.hs-flensburg.de/flar3845/barmband/bandcommand/messaging"
 	"log"
 	"os"
 	"time"
+
+	mqtt "github.com/eclipse/paho.mqtt.golang"
+	"gitlab.hs-flensburg.de/flar3845/barmband/bandcommand"
+	"gitlab.hs-flensburg.de/flar3845/barmband/bandcommand/messaging"
 )
 
 var f mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
@@ -18,7 +18,7 @@ var f mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
 
 const MqttBroker = "test.mosquitto.org"
 const MqttPort = "1883"
-const MqttTopic = "barmband/test"
+const ChallengeTopic = "barmband/challenge"
 
 const SetupTopic = "barmband/setup"
 
@@ -53,12 +53,29 @@ func main() {
 		log.Fatalf("Failed to connect to MQTT broker: %s", err)
 	}
 
-	if token := client.Subscribe(MqttTopic, 0, nil); token.Wait() && token.Error() != nil {
+	messageHandler := mqttMessageHandler(bc)
+
+	token := client.Subscribe(ChallengeTopic, 0, messageHandler)
+	token.Wait()
+
+	if token.Error() != nil {
 		log.Fatalf("Failed to subscribe to topic: %s", token.Error())
 	}
 
-	token := client.Subscribe(SetupTopic, 0, func(client mqtt.Client, message mqtt.Message) {
+	token = client.Subscribe(SetupTopic, 0, messageHandler)
+	token.Wait()
 
+	if token.Error() != nil {
+		log.Fatalf("Failed to subscribe to topic: %s", token.Error())
+	}
+
+	select {}
+}
+
+// mqttMessageHandler parses messages and send it to the BandCommand
+func mqttMessageHandler(bc bandcommand.BandCommand) func(client mqtt.Client, message mqtt.Message) {
+
+	return func(client mqtt.Client, message mqtt.Message) {
 		fmt.Println(message)
 		messageString := string(message.Payload())
 		msg, err := messaging.ParseMessage(messageString)
@@ -69,16 +86,5 @@ func main() {
 			fmt.Printf("Got message: %v\n", msg)
 			bc.HandleMessage(msg)
 		}
-
-	})
-	token.Wait()
-
-	if token.Error() != nil {
-		log.Fatalf("Failed to subscribe to topic: %s", token.Error())
 	}
-
-	bc.HandleMessage(messaging.SetupMessage{barmband.BarmbandId([]byte{1, 2, 3, 4})})
-	bc.HandleMessage(&messaging.SetupMessage{barmband.BarmbandId([]byte{5, 5, 5, 5})})
-
-	select {}
 }
