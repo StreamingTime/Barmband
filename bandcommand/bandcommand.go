@@ -53,31 +53,25 @@ func (bc *DefaultBandCommand) HandleMessage(msg messaging.Message) {
 
 func defaultMessageHandler(bc BandCommand, msg messaging.Message) {
 
-	switch msg.(type) {
+	switch msg := msg.(type) {
 	case messaging.SetupMessage:
 		fmt.Println("got setup message")
-		var setupMessage messaging.SetupMessage = msg.(messaging.SetupMessage)
-		bc.HandleSetupMessage(&setupMessage)
+		bc.HandleSetupMessage(&msg)
 	case *messaging.SetupMessage:
 		fmt.Println("got setup message")
-		var setupMessage *messaging.SetupMessage = msg.(*messaging.SetupMessage)
-		bc.HandleSetupMessage(setupMessage)
+		bc.HandleSetupMessage(msg)
 	case messaging.PairFoundMessage:
 		fmt.Println("Got pair found message")
-		var pairFoundMessage messaging.PairFoundMessage = msg.(messaging.PairFoundMessage)
-		bc.HandlePairFoundMessage(&pairFoundMessage)
+		bc.HandlePairFoundMessage(&msg)
 	case *messaging.PairFoundMessage:
 		fmt.Println("Got pair found message")
-		var pairFoundMessage *messaging.PairFoundMessage = msg.(*messaging.PairFoundMessage)
-		bc.HandlePairFoundMessage(pairFoundMessage)
+		bc.HandlePairFoundMessage(msg)
 	case messaging.AbortMessage:
 		fmt.Println("Got abort message")
-		var abortMessage messaging.AbortMessage = msg.(messaging.AbortMessage)
-		bc.HandleAbortMessage(&abortMessage)
+		bc.HandleAbortMessage(&msg)
 	case *messaging.AbortMessage:
 		fmt.Println("Got abort message")
-		var abortMessage *messaging.AbortMessage = msg.(*messaging.AbortMessage)
-		bc.HandleAbortMessage(abortMessage)
+		bc.HandleAbortMessage(msg)
 
 	default:
 		fmt.Printf("Unknown message: %T\n", msg)
