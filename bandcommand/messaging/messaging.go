@@ -23,11 +23,16 @@ type AbortMessage struct {
 	BarmbandId barmband.BarmbandId
 }
 
+type RequestPartnerMessage struct {
+	BarmbandId barmband.BarmbandId
+}
+
 type messageParser func(string) (Message, error)
 
 const SetupMessagePrefix = "Hello"
 const PairFoundMessagePrefix = "Pair found"
 const AbortMessagePrefix = "Abort"
+const RequestPartnerPrefix = "Request partner"
 
 var UnknownMessageError = errors.New("unknown message")
 var EmptyBandId = errors.New("EmptyBandId")
@@ -55,17 +60,22 @@ func parseSetupMessage(message string) (Message, error) {
 
 	helloMessageFormat := fmt.Sprintf("%s %%s", SetupMessagePrefix)
 
-	var bandId string
-	_, err := fmt.Sscanf(message, helloMessageFormat, &bandId)
+	var bandIdS string
+	_, err := fmt.Sscanf(message, helloMessageFormat, &bandIdS)
 
 	if err != nil {
 		return nil, err
 	}
-	if bandId == "" {
+	if bandIdS == "" {
 		return nil, EmptyBandId
 	}
+
+	bandId, err := barmband.IdFromString(bandIdS)
+	if err != nil {
+		return nil, err
+	}
 	return &SetupMessage{
-		BarmbandId: barmband.IdFromString(bandId),
+		BarmbandId: bandId,
 	}, nil
 }
 
@@ -73,19 +83,30 @@ func parsePairFoundMessage(message string) (Message, error) {
 
 	pairFoundMessageFormat := fmt.Sprintf("%s %%s %%s", PairFoundMessagePrefix)
 
-	var firstBandId string
-	var secondBandId string
-	_, err := fmt.Sscanf(message, pairFoundMessageFormat, &firstBandId, &secondBandId)
+	var firstBandIdS string
+	var secondBandIdS string
+	_, err := fmt.Sscanf(message, pairFoundMessageFormat, &firstBandIdS, &secondBandIdS)
 
 	if err != nil {
 		return nil, err
 	}
-	if firstBandId == "" || secondBandId == "" {
+	if firstBandIdS == "" || secondBandIdS == "" {
 		return nil, EmptyBandId
 	}
+
+	firstBandId, err := barmband.IdFromString(firstBandIdS)
+	if err != nil {
+		return nil, err
+	}
+
+	secondBandId, err := barmband.IdFromString(secondBandIdS)
+	if err != nil {
+		return nil, err
+	}
+
 	return &PairFoundMessage{
-		FirstBarmbandId:  barmband.IdFromString(firstBandId),
-		SecondBarmbandId: barmband.IdFromString(secondBandId),
+		FirstBarmbandId:  firstBandId,
+		SecondBarmbandId: secondBandId,
 	}, nil
 }
 
@@ -93,16 +114,45 @@ func parseAbortMessage(message string) (Message, error) {
 
 	abortMessageFormat := fmt.Sprintf("%s %%s", AbortMessagePrefix)
 
-	var bandId string
-	_, err := fmt.Sscanf(message, abortMessageFormat, &bandId)
+	var bandIdS string
+	_, err := fmt.Sscanf(message, abortMessageFormat, &bandIdS)
 
 	if err != nil {
 		return nil, err
 	}
-	if bandId == "" {
+	if bandIdS == "" {
 		return nil, EmptyBandId
 	}
+
+	bandId, err := barmband.IdFromString(bandIdS)
+	if err != nil {
+		return nil, err
+	}
 	return &AbortMessage{
-		BarmbandId: barmband.IdFromString(bandId),
+		BarmbandId: bandId,
+	}, nil
+}
+
+func parseRequestPartnerMessage(message string) (Message, error) {
+
+	requestPartnerMessageFormat := fmt.Sprintf("%s %%s", RequestPartnerPrefix)
+
+	var bandIdS string
+	_, err := fmt.Sscanf(message, requestPartnerMessageFormat, &bandIdS)
+
+	if err != nil {
+		return nil, err
+	}
+	if bandIdS == "" {
+		return nil, EmptyBandId
+	}
+
+	bandId, err := barmband.IdFromString(bandIdS)
+	if err != nil {
+		return nil, err
+	}
+
+	return &RequestPartnerMessage{
+		BarmbandId: bandId,
 	}, nil
 }

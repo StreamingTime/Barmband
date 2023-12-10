@@ -13,6 +13,7 @@ type BandCommand interface {
 	HandleSetupMessage(msg *messaging.SetupMessage)
 	HandlePairFoundMessage(message *messaging.PairFoundMessage)
 	HandleAbortMessage(message *messaging.AbortMessage)
+	HandleRequestPartnerMessage(message *messaging.RequestPartnerMessage)
 	GetBand(id barmband.BarmbandId) *barmband.Barmband
 }
 
@@ -72,6 +73,12 @@ func defaultMessageHandler(bc BandCommand, msg messaging.Message) {
 	case *messaging.AbortMessage:
 		fmt.Println("Got abort message")
 		bc.HandleAbortMessage(msg)
+	case messaging.RequestPartnerMessage:
+		fmt.Println("Got request partner message")
+		bc.HandleRequestPartnerMessage(&msg)
+	case *messaging.RequestPartnerMessage:
+		fmt.Println("Got request partner message")
+		bc.HandleRequestPartnerMessage(msg)
 
 	default:
 		fmt.Printf("Unknown message: %T\n", msg)
@@ -132,4 +139,26 @@ func (bc *DefaultBandCommand) HandleAbortMessage(message *messaging.AbortMessage
 	}
 
 	bc.pairs = append(bc.pairs[:i], bc.pairs[i+1:]...)
+}
+
+func (bc *DefaultBandCommand) HandleRequestPartnerMessage(message *messaging.RequestPartnerMessage) {
+	if !bc.isRegistered(message.BarmbandId) {
+		return
+	}
+
+	if bc.hasMatch(message.BarmbandId) {
+		return
+	}
+
+	// TODO: matchmaking magic
+}
+
+func (bc *DefaultBandCommand) isRegistered(barmbandId barmband.BarmbandId) bool {
+	return bc.GetBand(barmbandId) != nil
+}
+
+func (bc *DefaultBandCommand) hasMatch(barmbandId barmband.BarmbandId) bool {
+	return slices.ContainsFunc(bc.pairs, func(pair barmband.Pair) bool {
+		return pair.First == barmbandId || pair.Second == barmbandId
+	})
 }

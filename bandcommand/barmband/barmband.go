@@ -1,21 +1,28 @@
 package barmband
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 )
 
 type BarmbandId = [4]byte
 
+var InvalidLengthError = errors.New("barmband id has invalid length")
+
 // IdFromString converts  the string "12345678" to the BarmbandId []byte{0x12, 0x34, 0x56, 0x78}
-func IdFromString(s string) BarmbandId {
+func IdFromString(s string) (BarmbandId, error) {
+	if len(s) != 8 {
+		return BarmbandId{}, InvalidLengthError
+	}
+
 	bytes := make([]byte, 0, len(s)/2)
 	for i := 0; i < len(s); i += 2 {
 		num, _ := strconv.ParseUint(s[i:i+2], 16, 8)
 		bytes = append(bytes, byte(num))
 	}
 	fmt.Printf("%X\n", bytes)
-	return BarmbandId(bytes)
+	return BarmbandId(bytes), nil
 
 }
 

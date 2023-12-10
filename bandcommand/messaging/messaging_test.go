@@ -50,3 +50,16 @@ func Test_parseAbortMessage(t *testing.T) {
 		assert.Equal(t, bandIdA, abortMessage.BarmbandId)
 	})
 }
+
+func Test_parseRequestPartnerMessage(t *testing.T) {
+	t.Run("converts raw message to struct", func(t *testing.T) {
+
+		rawMessage := "Request partner AAAAAAAA"
+
+		msg, err := parseRequestPartnerMessage(rawMessage)
+
+		requestParnerMessage := msg.(*RequestPartnerMessage)
+		assert.Nil(t, err)
+		assert.Equal(t, bandIdA, requestParnerMessage.BarmbandId)
+	})
+}

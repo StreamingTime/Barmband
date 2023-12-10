@@ -31,9 +31,13 @@ func Test_defaultMessageHandler(t *testing.T) {
 			FirstBarmbandId:  bandIdA,
 			SecondBarmbandId: bandIdB,
 		}
+
+		requestPartnerMessage := messaging.RequestPartnerMessage{BarmbandId: bandIdA}
+
 		mockBc.EXPECT().HandleSetupMessage(gomock.Any()).Times(2)
 		mockBc.EXPECT().HandlePairFoundMessage(&pairFoundMessage).Times(2)
 		mockBc.EXPECT().HandleAbortMessage(&abortMsg).Times(2)
+		mockBc.EXPECT().HandleRequestPartnerMessage(&requestPartnerMessage).Times(2)
 
 		defaultMessageHandler(mockBc, setupMsg)
 		defaultMessageHandler(mockBc, &setupMsg2)
@@ -43,6 +47,9 @@ func Test_defaultMessageHandler(t *testing.T) {
 
 		defaultMessageHandler(mockBc, abortMsg)
 		defaultMessageHandler(mockBc, &abortMsg)
+
+		defaultMessageHandler(mockBc, requestPartnerMessage)
+		defaultMessageHandler(mockBc, &requestPartnerMessage)
 	})
 }
 
@@ -207,6 +214,85 @@ func TestBandCommand_HandleAbortMessage(t *testing.T) {
 
 }
 
+func TestBandCommand_HandleRequestPartnerMessage(t *testing.T) {
+
+	t.Run("is ignored when there is a pair with this band", func(t *testing.T) {
+
+		type testCase struct {
+			name   string
+			bandId barmband.BarmbandId
+		}
+		testCases := []testCase{
+			{
+				name:   "A",
+				bandId: bandIdA,
+			},
+			{
+				name:   "B",
+				bandId: bandIdB,
+			},
+		}
+
+		for _, tc := range testCases {
+			t.Run(tc.name, func(t *testing.T) {
+				bc := New()
+
+				bc.barmbands = []barmband.Barmband{
+					barmband.NewBarmband(bandIdA),
+					barmband.NewBarmband(bandIdB),
+					barmband.NewBarmband(bandIdC),
+				}
+
+				bc.pairs = []barmband.Pair{
+					{
+						First:  bandIdA,
+						Second: bandIdB,
+					},
+				}
+
+				requestPair := messaging.RequestPartnerMessage{BarmbandId: tc.bandId}
+
+				bc.HandleRequestPartnerMessage(&requestPair)
+
+				assert.Len(t, bc.pairs, 1)
+			})
+
+		}
+
+	})
+
+	t.Run("ignores request when band is not registered", func(t *testing.T) {
+
+		bc := New()
+
+		msg := messaging.RequestPartnerMessage{BarmbandId: bandIdA}
+
+		bc.HandleRequestPartnerMessage(&msg)
+
+		// TODO: test that the waiting state is unchanged
+		t.Fatalf("not implemented")
+	})
+
+	t.Run("ignores request when band is already waiting for a partner", func(t *testing.T) {
+
+		bc := New()
+
+		bc.barmbands = []barmband.Barmband{
+			barmband.NewBarmband(bandIdA),
+			barmband.NewBarmband(bandIdB),
+			barmband.NewBarmband(bandIdC),
+		}
+
+		msg := messaging.RequestPartnerMessage{BarmbandId: bandIdC}
+
+		bc.HandleRequestPartnerMessage(&msg)
+
+		// TODO: test that the waiting state is unchanged
+		t.Fatalf("not implemented")
+	})
+
+}
+
 func TestDefaultBandCommand_GetBand(t *testing.T) {
 
 	bc := New()
@@ -218,4 +304,28 @@ func TestDefaultBandCommand_GetBand(t *testing.T) {
 
 	assert.Equal(t, bandIdB, bc.GetBand(bandIdB).Id)
 	assert.Nil(t, bc.GetBand(bandIdC))
+}
+
+func TestDefaultBandCommand_isRegistered(t *testing.T) {
+
+	bc := New()
+
+	bc.barmbands = append(bc.barmbands, barmband.NewBarmband(bandIdA), barmband.NewBarmband(bandIdB))
+
+	assert.True(t, bc.isRegistered(bandIdA))
+	assert.True(t, bc.isRegistered(bandIdB))
+	assert.False(t, bc.isRegistered(bandIdC))
+
+}
+
+func TestDefaultBandCommand_hasMatch(t *testing.T) {
+
+	bc := New()
+
+	bc.pairs = append(bc.pairs, barmband.NewPair(bandIdA, bandIdB))
+
+	assert.True(t, bc.hasMatch(bandIdA))
+	assert.True(t, bc.hasMatch(bandIdB))
+	assert.False(t, bc.hasMatch(bandIdC))
+
 }
