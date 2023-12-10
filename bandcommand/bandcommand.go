@@ -2,10 +2,12 @@ package bandcommand
 
 import (
 	"fmt"
+	"log"
 	"slices"
 	"sync"
 
 	"gitlab.hs-flensburg.de/flar3845/barmband/bandcommand/barmband"
+	"gitlab.hs-flensburg.de/flar3845/barmband/bandcommand/matchmaking"
 	"gitlab.hs-flensburg.de/flar3845/barmband/bandcommand/messaging"
 )
 
@@ -24,13 +26,36 @@ type DefaultBandCommand struct {
 	messageHandler func(bc BandCommand, msg messaging.Message)
 	pairs          []barmband.Pair
 	pairsMutex     sync.RWMutex
+	matchmaker     matchmaking.Matchmaker
+	pairsChan      chan barmband.Pair
 }
 
 func New() *DefaultBandCommand {
+	matchmaker := matchmaking.New()
+
 	return &DefaultBandCommand{
 		barmbands:      make([]barmband.Barmband, 0),
 		messageHandler: defaultMessageHandler,
+		matchmaker:     matchmaker,
+		pairsChan:      make(chan barmband.Pair),
 	}
+}
+
+func (bc *DefaultBandCommand) StartMatchmaker(callback func(pair barmband.Pair)) {
+	bc.matchmaker.StartMatchmaker(bc.pairsChan)
+	log.Println("Started matchmaker")
+
+	go func() {
+		for pair := range bc.pairsChan {
+			log.Printf("Found pair %s %s\n", pair.First, pair.Second)
+
+			bc.pairsMutex.Lock()
+			bc.pairs = append(bc.pairs, pair)
+			bc.pairsMutex.Unlock()
+
+			callback(pair)
+		}
+	}()
 }
 
 // GetBand returns a pointer to the band with the given id, or nil if there is no band with this id
@@ -140,6 +165,8 @@ func (bc *DefaultBandCommand) HandleAbortMessage(message *messaging.AbortMessage
 	}
 
 	bc.pairs = append(bc.pairs[:i], bc.pairs[i+1:]...)
+
+	bc.matchmaker.RemoveBand(message.BarmbandId)
 }
 
 func (bc *DefaultBandCommand) HandleRequestPartnerMessage(message *messaging.RequestPartnerMessage) {
@@ -150,6 +177,8 @@ func (bc *DefaultBandCommand) HandleRequestPartnerMessage(message *messaging.Req
 	if bc.hasMatch(message.BarmbandId) {
 		return
 	}
+
+	bc.matchmaker.AddBand(message.BarmbandId)
 
 	// TODO: matchmaking magic
 }

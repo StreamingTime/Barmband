@@ -8,6 +8,7 @@ import (
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"gitlab.hs-flensburg.de/flar3845/barmband/bandcommand"
+	"gitlab.hs-flensburg.de/flar3845/barmband/bandcommand/barmband"
 	"gitlab.hs-flensburg.de/flar3845/barmband/bandcommand/messaging"
 )
 
@@ -68,6 +69,10 @@ func main() {
 	if token.Error() != nil {
 		log.Fatalf("Failed to subscribe to topic: %s", token.Error())
 	}
+
+	bc.StartMatchmaker(func(pair barmband.Pair) {
+		client.Publish(ChallengeTopic, 0, false, fmt.Sprintf("New pair %s %s", pair.First, pair.Second))
+	})
 
 	select {}
 }
