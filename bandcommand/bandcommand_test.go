@@ -1,12 +1,13 @@
 package bandcommand
 
 import (
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"gitlab.hs-flensburg.de/flar3845/barmband/bandcommand/_mocks/mock_bandcommand"
 	"gitlab.hs-flensburg.de/flar3845/barmband/bandcommand/barmband"
 	"gitlab.hs-flensburg.de/flar3845/barmband/bandcommand/messaging"
 	"go.uber.org/mock/gomock"
-	"testing"
 )
 
 var bandIdA = barmband.BarmbandId([]byte{0xAA, 0xAA, 0xAA, 0xAA})

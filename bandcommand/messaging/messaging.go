@@ -3,8 +3,9 @@ package messaging
 import (
 	"errors"
 	"fmt"
-	"gitlab.hs-flensburg.de/flar3845/barmband/bandcommand/barmband"
 	"strings"
+
+	"gitlab.hs-flensburg.de/flar3845/barmband/bandcommand/barmband"
 )
 
 type Message interface {

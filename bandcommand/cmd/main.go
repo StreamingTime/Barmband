@@ -2,12 +2,13 @@ package main
 
 import (
 	"fmt"
-	mqtt "github.com/eclipse/paho.mqtt.golang"
-	"gitlab.hs-flensburg.de/flar3845/barmband/bandcommand"
-	"gitlab.hs-flensburg.de/flar3845/barmband/bandcommand/messaging"
 	"log"
 	"os"
 	"time"
+
+	mqtt "github.com/eclipse/paho.mqtt.golang"
+	"gitlab.hs-flensburg.de/flar3845/barmband/bandcommand"
+	"gitlab.hs-flensburg.de/flar3845/barmband/bandcommand/messaging"
 )
 
 var f mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {

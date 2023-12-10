@@ -2,10 +2,11 @@ package bandcommand
 
 import (
 	"fmt"
-	"gitlab.hs-flensburg.de/flar3845/barmband/bandcommand/barmband"
-	"gitlab.hs-flensburg.de/flar3845/barmband/bandcommand/messaging"
 	"slices"
 	"sync"
+
+	"gitlab.hs-flensburg.de/flar3845/barmband/bandcommand/barmband"
+	"gitlab.hs-flensburg.de/flar3845/barmband/bandcommand/messaging"
 )
 
 type BandCommand interface {
