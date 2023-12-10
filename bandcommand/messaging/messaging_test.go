@@ -1,9 +1,10 @@
 package messaging
 
 import (
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"gitlab.hs-flensburg.de/flar3845/barmband/bandcommand/barmband"
-	"testing"
 )
 
 var bandIdA = barmband.BarmbandId([]byte{0xAA, 0xAA, 0xAA, 0xAA})
