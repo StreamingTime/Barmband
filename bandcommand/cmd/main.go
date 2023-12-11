@@ -17,7 +17,7 @@ var f mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
 	fmt.Printf("MSG: %s\n", msg.Payload())
 }
 
-const MqttBroker = "localhost"
+const MqttBroker = "test.mosquitto.org"
 const MqttPort = "1883"
 const ChallengeTopic = "barmband/challenge"
 
