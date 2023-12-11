@@ -53,7 +53,10 @@ func main() {
 	}
 
 	bc := bandcommand.New(func(pair barmband.Pair) {
-		client.Publish(ChallengeTopic, 0, false, fmt.Sprintf("New pair %s %s", pair.First, pair.Second))
+		firstS := fmt.Sprintf("%X", pair.First)
+		secondS := fmt.Sprintf("%X", pair.Second)
+
+		client.Publish(ChallengeTopic, 0, false, fmt.Sprintf("New pair %s %s", firstS, secondS))
 	})
 
 	messageHandler := mqttMessageHandler(bc)
