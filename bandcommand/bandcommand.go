@@ -7,7 +7,6 @@ import (
 	"sync"
 
 	"gitlab.hs-flensburg.de/flar3845/barmband/bandcommand/barmband"
-	"gitlab.hs-flensburg.de/flar3845/barmband/bandcommand/matchmaking"
 	"gitlab.hs-flensburg.de/flar3845/barmband/bandcommand/messaging"
 )
 
@@ -21,41 +20,22 @@ type BandCommand interface {
 }
 
 type DefaultBandCommand struct {
-	barmbandsMutex sync.RWMutex
-	barmbands      []barmband.Barmband
-	messageHandler func(bc BandCommand, msg messaging.Message)
-	pairs          []barmband.Pair
-	pairsMutex     sync.RWMutex
-	matchmaker     matchmaking.Matchmaker
-	pairsChan      chan barmband.Pair
+	barmbandsMutex    sync.RWMutex
+	barmbands         []barmband.Barmband
+	messageHandler    func(bc BandCommand, msg messaging.Message)
+	pairs             []barmband.Pair
+	pairsMutex        sync.RWMutex
+	pairsChan         chan barmband.Pair
+	pairFoundCallback func(pair barmband.Pair)
 }
 
-func New() *DefaultBandCommand {
-	matchmaker := matchmaking.New()
-
+func New(pairFoundCallback func(pair barmband.Pair)) *DefaultBandCommand {
 	return &DefaultBandCommand{
-		barmbands:      make([]barmband.Barmband, 0),
-		messageHandler: defaultMessageHandler,
-		matchmaker:     matchmaker,
-		pairsChan:      make(chan barmband.Pair),
+		barmbands:         make([]barmband.Barmband, 0),
+		messageHandler:    defaultMessageHandler,
+		pairsChan:         make(chan barmband.Pair),
+		pairFoundCallback: pairFoundCallback,
 	}
-}
-
-func (bc *DefaultBandCommand) StartMatchmaker(callback func(pair barmband.Pair)) {
-	bc.matchmaker.StartMatchmaker(bc.pairsChan)
-	log.Println("Started matchmaker")
-
-	go func() {
-		for pair := range bc.pairsChan {
-			log.Printf("Found pair %s %s\n", pair.First, pair.Second)
-
-			bc.pairsMutex.Lock()
-			bc.pairs = append(bc.pairs, pair)
-			bc.pairsMutex.Unlock()
-
-			callback(pair)
-		}
-	}()
 }
 
 // GetBand returns a pointer to the band with the given id, or nil if there is no band with this id
@@ -156,6 +136,8 @@ func (bc *DefaultBandCommand) HandleAbortMessage(message *messaging.AbortMessage
 	bc.pairsMutex.Lock()
 	defer bc.pairsMutex.Unlock()
 
+	bc.setWantsPair(message.BarmbandId, false)
+
 	i := slices.IndexFunc(bc.pairs, func(pair barmband.Pair) bool {
 		return pair.First == message.BarmbandId || pair.Second == message.BarmbandId
 	})
@@ -164,23 +146,44 @@ func (bc *DefaultBandCommand) HandleAbortMessage(message *messaging.AbortMessage
 		return
 	}
 
-	bc.pairs = append(bc.pairs[:i], bc.pairs[i+1:]...)
+	bc.setWantsPair(bc.pairs[i].First, false)
+	bc.setWantsPair(bc.pairs[i].Second, false)
 
-	bc.matchmaker.RemoveBand(message.BarmbandId)
+	bc.pairs = append(bc.pairs[:i], bc.pairs[i+1:]...)
 }
 
 func (bc *DefaultBandCommand) HandleRequestPartnerMessage(message *messaging.RequestPartnerMessage) {
 	if !bc.isRegistered(message.BarmbandId) {
+		log.Printf("Band %s is not registered\n", message.BarmbandId)
 		return
 	}
 
 	if bc.hasMatch(message.BarmbandId) {
+		log.Printf("Band %s already has match\n", message.BarmbandId)
 		return
 	}
 
-	bc.matchmaker.AddBand(message.BarmbandId)
+	partnerId := bc.findPartnerFor(message.BarmbandId)
 
-	// TODO: matchmaking magic
+	if partnerId == nil {
+		bc.setWantsPair(message.BarmbandId, true)
+		log.Printf("Band %s wants pair\n", message.BarmbandId)
+
+		return
+	}
+
+	pair := barmband.NewPair(message.BarmbandId, *partnerId)
+
+	log.Printf("Found pair %s %s\n", pair.First, pair.Second)
+
+	bc.pairsMutex.Lock()
+	bc.pairs = append(bc.pairs, pair)
+	bc.pairsMutex.Unlock()
+
+	bc.setWantsPair(pair.First, false)
+	bc.setWantsPair(pair.Second, false)
+
+	bc.pairFoundCallback(pair)
 }
 
 func (bc *DefaultBandCommand) isRegistered(barmbandId barmband.BarmbandId) bool {
@@ -191,4 +194,37 @@ func (bc *DefaultBandCommand) hasMatch(barmbandId barmband.BarmbandId) bool {
 	return slices.ContainsFunc(bc.pairs, func(pair barmband.Pair) bool {
 		return pair.First == barmbandId || pair.Second == barmbandId
 	})
+}
+
+func (bc *DefaultBandCommand) setWantsPair(bandId barmband.BarmbandId, wantsPair bool) {
+	band := bc.GetBand(bandId)
+	if band == nil {
+		return
+	}
+	band.WantsPair = wantsPair
+}
+
+func (bc *DefaultBandCommand) findPartnerFor(bandId barmband.BarmbandId) *barmband.BarmbandId {
+	bc.barmbandsMutex.RLock()
+	defer bc.barmbandsMutex.RUnlock()
+
+	var wantsPairBands []barmband.Barmband
+
+	for _, otherBand := range bc.barmbands {
+		if otherBand.Id == bandId {
+			continue
+		}
+
+		if otherBand.WantsPair {
+			wantsPairBands = append(wantsPairBands, otherBand)
+		}
+	}
+
+	if len(wantsPairBands) == 0 {
+		return nil
+	}
+
+	// TODO: implement better matching algorithm
+
+	return &wantsPairBands[0].Id
 }

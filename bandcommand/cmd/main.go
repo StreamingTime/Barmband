@@ -17,7 +17,7 @@ var f mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
 	fmt.Printf("MSG: %s\n", msg.Payload())
 }
 
-const MqttBroker = "test.mosquitto.org"
+const MqttBroker = "localhost"
 const MqttPort = "1883"
 const ChallengeTopic = "barmband/challenge"
 
@@ -47,12 +47,14 @@ func connectMqtt(host string, port string) (mqtt.Client, error) {
 
 func main() {
 
-	bc := bandcommand.New()
-
 	client, err := connectMqtt(MqttBroker, MqttPort)
 	if err != nil {
 		log.Fatalf("Failed to connect to MQTT broker: %s", err)
 	}
+
+	bc := bandcommand.New(func(pair barmband.Pair) {
+		client.Publish(ChallengeTopic, 0, false, fmt.Sprintf("New pair %s %s", pair.First, pair.Second))
+	})
 
 	messageHandler := mqttMessageHandler(bc)
 
@@ -69,10 +71,6 @@ func main() {
 	if token.Error() != nil {
 		log.Fatalf("Failed to subscribe to topic: %s", token.Error())
 	}
-
-	bc.StartMatchmaker(func(pair barmband.Pair) {
-		client.Publish(ChallengeTopic, 0, false, fmt.Sprintf("New pair %s %s", pair.First, pair.Second))
-	})
 
 	select {}
 }
