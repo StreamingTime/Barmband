@@ -43,6 +43,7 @@ var messageParsers = map[string]messageParser{
 	SetupMessagePrefix:     parseSetupMessage,
 	PairFoundMessagePrefix: parsePairFoundMessage,
 	AbortMessagePrefix:     parseAbortMessage,
+	RequestPartnerPrefix:   parseRequestPartnerMessage,
 }
 
 // ParseMessage tries to convert a string into a Message using the parser configured in messageParsers
