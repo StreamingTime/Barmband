@@ -56,7 +56,9 @@ func Test_defaultMessageHandler(t *testing.T) {
 
 func TestBandCommand_handleSetupMessage(t *testing.T) {
 
-	bc := New()
+	bc := New(func(pair barmband.Pair) {
+		t.Fatalf("pairFoundCallback should not be called")
+	})
 
 	setupMsg := messaging.SetupMessage{BarmbandId: bandIdA}
 
@@ -91,7 +93,9 @@ func TestBandCommand_HandlePairFoundMessage(t *testing.T) {
 
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
-				bc := New()
+				bc := New(func(pair barmband.Pair) {
+					t.Fatalf("pairFoundCallback should not be called")
+				})
 
 				bc.barmbands = []barmband.Barmband{
 					barmband.NewBarmband(bandIdA),
@@ -118,7 +122,9 @@ func TestBandCommand_HandlePairFoundMessage(t *testing.T) {
 
 	t.Run("ignores non existent matches", func(t *testing.T) {
 
-		bc := New()
+		bc := New(func(pair barmband.Pair) {
+			t.Fatalf("pairFoundCallback should not be called")
+		})
 
 		bc.barmbands = []barmband.Barmband{
 			barmband.NewBarmband(bandIdA),
@@ -165,7 +171,9 @@ func TestBandCommand_HandleAbortMessage(t *testing.T) {
 
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
-				bc := New()
+				bc := New(func(pair barmband.Pair) {
+					t.Fatalf("pairFoundCallback should not be called")
+				})
 
 				bc.barmbands = []barmband.Barmband{
 					barmband.NewBarmband(bandIdA),
@@ -185,6 +193,8 @@ func TestBandCommand_HandleAbortMessage(t *testing.T) {
 				bc.HandleAbortMessage(&abortMsg)
 
 				assert.Len(t, bc.pairs, 0)
+				assert.False(t, bc.GetBand(bandIdA).WantsPair)
+				assert.False(t, bc.GetBand(bandIdB).WantsPair)
 			})
 
 		}
@@ -193,7 +203,9 @@ func TestBandCommand_HandleAbortMessage(t *testing.T) {
 
 	t.Run("ignores abort when band has no match", func(t *testing.T) {
 
-		bc := New()
+		bc := New(func(pair barmband.Pair) {
+			t.Fatalf("pairFoundCallback should not be called")
+		})
 
 		bc.barmbands = []barmband.Barmband{
 			barmband.NewBarmband(bandIdA),
@@ -236,7 +248,9 @@ func TestBandCommand_HandleRequestPartnerMessage(t *testing.T) {
 
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
-				bc := New()
+				bc := New(func(pair barmband.Pair) {
+					t.Fatalf("pairFoundCallback should not be called")
+				})
 
 				bc.barmbands = []barmband.Barmband{
 					barmband.NewBarmband(bandIdA),
@@ -256,6 +270,7 @@ func TestBandCommand_HandleRequestPartnerMessage(t *testing.T) {
 				bc.HandleRequestPartnerMessage(&requestPair)
 
 				assert.Len(t, bc.pairs, 1)
+				assert.False(t, bc.GetBand(tc.bandId).WantsPair)
 			})
 
 		}
@@ -264,39 +279,95 @@ func TestBandCommand_HandleRequestPartnerMessage(t *testing.T) {
 
 	t.Run("ignores request when band is not registered", func(t *testing.T) {
 
-		bc := New()
+		bc := New(func(pair barmband.Pair) {
+			t.Fatalf("pairFoundCallback should not be called")
+		})
 
 		msg := messaging.RequestPartnerMessage{BarmbandId: bandIdA}
 
 		bc.HandleRequestPartnerMessage(&msg)
 
-		// TODO: test that the waiting state is unchanged
-		t.Fatalf("not implemented")
+		assert.Len(t, bc.pairs, 0)
 	})
 
 	t.Run("ignores request when band is already waiting for a partner", func(t *testing.T) {
 
-		bc := New()
+		bc := New(func(pair barmband.Pair) {
+			t.Fatalf("pairFoundCallback should not be called")
+		})
+
+		bandA := barmband.NewBarmband(bandIdA)
+		bandA.WantsPair = true
+
+		bandB := barmband.NewBarmband(bandIdA)
+		bandC := barmband.NewBarmband(bandIdA)
+
+		bc.barmbands = []barmband.Barmband{
+			bandA,
+			bandB,
+			bandC,
+		}
+
+		msg := messaging.RequestPartnerMessage{BarmbandId: bandIdA}
+
+		bc.HandleRequestPartnerMessage(&msg)
+
+		assert.Len(t, bc.pairs, 0)
+		assert.True(t, bandA.WantsPair)
+		assert.False(t, bandB.WantsPair)
+		assert.False(t, bandC.WantsPair)
+	})
+
+	t.Run("requests partner when no match can be created", func(t *testing.T) {
+
+		bc := New(func(pair barmband.Pair) {
+			t.Fatalf("pairFoundCallback should not be called")
+		})
 
 		bc.barmbands = []barmband.Barmband{
 			barmband.NewBarmband(bandIdA),
 			barmband.NewBarmband(bandIdB),
-			barmband.NewBarmband(bandIdC),
 		}
 
-		msg := messaging.RequestPartnerMessage{BarmbandId: bandIdC}
+		msg := messaging.RequestPartnerMessage{BarmbandId: bandIdA}
 
 		bc.HandleRequestPartnerMessage(&msg)
 
-		// TODO: test that the waiting state is unchanged
-		t.Fatalf("not implemented")
+		assert.Len(t, bc.pairs, 0)
+		assert.True(t, bc.GetBand(bandIdA).WantsPair)
+		assert.False(t, bc.GetBand(bandIdB).WantsPair)
+	})
+
+	t.Run("creates match when possible", func(t *testing.T) {
+
+		bc := New(func(pair barmband.Pair) {
+			assert.Equal(t, bandIdA, pair.Second)
+			assert.Equal(t, bandIdB, pair.First)
+		})
+
+		bc.barmbands = []barmband.Barmband{
+			barmband.NewBarmband(bandIdA),
+			barmband.NewBarmband(bandIdB),
+		}
+
+		msg1 := messaging.RequestPartnerMessage{BarmbandId: bandIdA}
+		bc.HandleRequestPartnerMessage(&msg1)
+
+		msg2 := messaging.RequestPartnerMessage{BarmbandId: bandIdB}
+		bc.HandleRequestPartnerMessage(&msg2)
+
+		assert.Len(t, bc.pairs, 1)
+		assert.False(t, bc.GetBand(bandIdA).WantsPair)
+		assert.False(t, bc.GetBand(bandIdB).WantsPair)
 	})
 
 }
 
 func TestDefaultBandCommand_GetBand(t *testing.T) {
 
-	bc := New()
+	bc := New(func(pair barmband.Pair) {
+		t.Fatalf("pairFoundCallback should not be called")
+	})
 
 	bc.barmbands = []barmband.Barmband{
 		barmband.NewBarmband(bandIdA),
@@ -309,7 +380,9 @@ func TestDefaultBandCommand_GetBand(t *testing.T) {
 
 func TestDefaultBandCommand_isRegistered(t *testing.T) {
 
-	bc := New()
+	bc := New(func(pair barmband.Pair) {
+		t.Fatalf("pairFoundCallback should not be called")
+	})
 
 	bc.barmbands = append(bc.barmbands, barmband.NewBarmband(bandIdA), barmband.NewBarmband(bandIdB))
 
@@ -321,7 +394,9 @@ func TestDefaultBandCommand_isRegistered(t *testing.T) {
 
 func TestDefaultBandCommand_hasMatch(t *testing.T) {
 
-	bc := New()
+	bc := New(func(pair barmband.Pair) {
+		t.Fatalf("pairFoundCallback should not be called")
+	})
 
 	bc.pairs = append(bc.pairs, barmband.NewPair(bandIdA, bandIdB))
 
@@ -329,4 +404,37 @@ func TestDefaultBandCommand_hasMatch(t *testing.T) {
 	assert.True(t, bc.hasMatch(bandIdB))
 	assert.False(t, bc.hasMatch(bandIdC))
 
+}
+
+func TestDefaultBandCommand_setWantsPair(t *testing.T) {
+
+	bc := New(func(pair barmband.Pair) {
+		t.Fatalf("pairFoundCallback should not be called")
+	})
+
+	bc.barmbands = append(bc.barmbands, barmband.NewBarmband(bandIdA), barmband.NewBarmband(bandIdB))
+
+	bc.setWantsPair(bandIdA, true)
+	bc.setWantsPair(bandIdB, false)
+
+	assert.True(t, bc.GetBand(bandIdA).WantsPair)
+	assert.False(t, bc.GetBand(bandIdB).WantsPair)
+}
+
+func TestDefaultBandCommand_findPartnerFor(t *testing.T) {
+
+	bc := New(func(pair barmband.Pair) {
+		t.Fatalf("pairFoundCallback should not be called")
+	})
+
+	bandA := barmband.NewBarmband(bandIdA)
+	bandA.WantsPair = true
+
+	bandB := barmband.NewBarmband(bandIdB)
+	bandB.WantsPair = false
+
+	bc.barmbands = append(bc.barmbands, bandA, bandB)
+
+	assert.Equal(t, bandIdA, *bc.findPartnerFor(bandIdB))
+	assert.Nil(t, bc.findPartnerFor(bandIdA))
 }
