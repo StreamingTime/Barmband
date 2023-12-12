@@ -25,7 +25,6 @@ type DefaultBandCommand struct {
 	messageHandler    func(bc BandCommand, msg messaging.Message)
 	pairs             []barmband.Pair
 	pairsMutex        sync.RWMutex
-	pairsChan         chan barmband.Pair
 	pairFoundCallback func(pair barmband.Pair)
 }
 
@@ -33,7 +32,6 @@ func New(pairFoundCallback func(pair barmband.Pair)) *DefaultBandCommand {
 	return &DefaultBandCommand{
 		barmbands:         make([]barmband.Barmband, 0),
 		messageHandler:    defaultMessageHandler,
-		pairsChan:         make(chan barmband.Pair),
 		pairFoundCallback: pairFoundCallback,
 	}
 }
