@@ -12,8 +12,7 @@ TimerHandle_t mqttReconnectTimer;
 TimerHandle_t wifiReconnectTimer;
 
 #define LED_PIN 12
-#define RDM6300_RX_PIN \
-  5  // read the SoftwareSerial doc above! may need to change this pin to 10...
+#define RDM6300_RX_PIN 5
 
 // #define NUM_LEDS 11
 #define NUM_LEDS 8
@@ -40,12 +39,16 @@ void onMqttConnect(bool sessionPresent) {
   uint16_t packetIdSub = mqttClient.subscribe(MQTT_TOPIC, 2);
   Serial.print("Subscribing at QoS 2, packetId: ");
   Serial.println(packetIdSub);
-  mqttClient.publish(MQTT_TOPIC, 1, true, "Barmband connected to MQTT");
-  Serial.println(mqttClient.getClientId());  // esp32-f4b998c3dc24
 
   // subscribe to topics to be able to receive messages
-  mqttClient.subscribe("scan", 0);
-  mqttClient.subscribe("setup", 0);
+  mqttClient.subscribe("barmband/setup", 0);
+
+  // Registration
+  char message[16];
+  sprintf(message, "Hello %02X%02X%02X%02X", ownID[0], ownID[1], ownID[2],
+          ownID[3]);
+  Serial.println(message);
+  mqttClient.publish("barmband/setup", 1, true, message);
 }
 
 void onMqttDisconnect(AsyncMqttClientDisconnectReason reason) {
@@ -92,18 +95,18 @@ void onMqttMessage(char *topic, char *payload,
   String msg(payload, len);
 
   if (strcmp(topic, "setup") == 0) {
-    //msg should contain basic setup stuff (whatever that could be)
+    // msg should contain basic setup stuff (whatever that could be)
     Serial.println(msg);
   }
 
   if (strcmp(topic, "matchmaking") == 0) {
-    //msg should contain two IDs who are then searching for each other
+    // msg should contain two IDs who are then searching for each other
     Serial.println(msg);
   }
 
   if (strcmp(topic, "scan") == 0) {
-    //msg should contain two IDs who just matched
-    //these IDs should not match again in the future
+    // msg should contain two IDs who just matched
+    // these IDs should not match again in the future
     Serial.println(msg);
   }
   // Serial.println(msg);
