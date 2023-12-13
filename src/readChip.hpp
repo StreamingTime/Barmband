@@ -72,7 +72,7 @@ String read() {
 
   char s[8];
 
-  sprintf(s, "%X%X%X%X", nuidPICC[0], nuidPICC[1], nuidPICC[2], nuidPICC[3]);
+  sprintf(s, "%02X%02X%02X%02X", nuidPICC[0], nuidPICC[1], nuidPICC[2], nuidPICC[3]);
   return String(nuidPICC, TAG_ID_SIZE);
 }
 
