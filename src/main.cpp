@@ -2,18 +2,18 @@
 #include <FastLED.h>
 #include <WiFi.h>
 #include <rdm6300.h>
-
+#include "messages.h"
 #include "Arduino.h"
 #include "config.h"
 #include "readChip.hpp"
+#include "state.h"
 
 AsyncMqttClient mqttClient;
 TimerHandle_t mqttReconnectTimer;
 TimerHandle_t wifiReconnectTimer;
 
 #define LED_PIN 12
-#define RDM6300_RX_PIN \
-  5  // read the SoftwareSerial doc above! may need to change this pin to 10...
+#define RDM6300_RX_PIN 5
 
 // #define NUM_LEDS 11
 #define NUM_LEDS 8
@@ -23,10 +23,20 @@ CRGB leds[NUM_LEDS];
 
 #define UPDATES_PER_SECOND 100
 
-byte ownID[4] = {0x63, 0xD5, 0x92, 0xA9};
+String ownID = "63D592A9";
+String partnerID = "";
 
-int state = 0;
+barmband::state::bandState currentState = barmband::state::startup;
+
 Rdm6300 rdm6300;
+
+// packet id of the last registration message sent
+uint16_t registrationPacketId = 0;
+
+void setState(barmband::state::bandState newState) {
+  Serial.printf("New state: %s\n", barmband::state::bandStateNames[newState]);
+  currentState = newState;
+}
 
 void connectToMqtt() {
   Serial.println("Connecting to MQTT...");
@@ -40,12 +50,16 @@ void onMqttConnect(bool sessionPresent) {
   uint16_t packetIdSub = mqttClient.subscribe(MQTT_TOPIC, 2);
   Serial.print("Subscribing at QoS 2, packetId: ");
   Serial.println(packetIdSub);
-  mqttClient.publish(MQTT_TOPIC, 1, true, "Barmband connected to MQTT");
-  Serial.println(mqttClient.getClientId());  // esp32-f4b998c3dc24
 
   // subscribe to topics to be able to receive messages
-  mqttClient.subscribe("scan", 0);
-  mqttClient.subscribe("setup", 0);
+  mqttClient.subscribe("barmband/setup", 0);
+  mqttClient.subscribe("barmband/challenge", 0);
+
+  // Registration
+  char message[16];
+  sprintf(message, "Hello %s", ownID);
+  Serial.println(message);
+  registrationPacketId =  mqttClient.publish("barmband/setup", 1, true, message);
 }
 
 void onMqttDisconnect(AsyncMqttClientDisconnectReason reason) {
@@ -92,18 +106,59 @@ void onMqttMessage(char *topic, char *payload,
   String msg(payload, len);
 
   if (strcmp(topic, "setup") == 0) {
-    //msg should contain basic setup stuff (whatever that could be)
+    // msg should contain basic setup stuff (whatever that could be)
     Serial.println(msg);
   }
 
-  if (strcmp(topic, "matchmaking") == 0) {
-    //msg should contain two IDs who are then searching for each other
+  if (strcmp(topic, "barmband/challenge") == 0) {
+    // msg should contain two IDs who are then searching for each other
     Serial.println(msg);
+    
+    auto newPairMessage = barmband::messages::parseNewPairMessage(msg);
+    if (newPairMessage.isOk) {
+      Serial.println("got new pair message");
+
+      if (currentState == barmband::state::waiting) {
+        if (newPairMessage.firstBandId == ownID) {
+          Serial.println("It's for me!");
+          partnerID = newPairMessage.secondBandId;
+        } else if (newPairMessage.secondBandId == ownID) {
+          Serial.println("It's for me!");
+          partnerID = newPairMessage.firstBandId;
+        }
+        Serial.printf("New partner: %s\n", partnerID);
+        setState(barmband::state::paired);
+      }
+      
+    }
+
+    // TODO: don't run other parsers when one succeeds
+    auto abortMessage = barmband::messages::parseAbortMessage(msg);
+    if (abortMessage.isOk) {
+      Serial.println("got abort message");
+
+      if (currentState == barmband::state::paired && abortMessage.bandId == partnerID) {
+        // TODO: notify user
+        Serial.println("partner aborted challenge");
+        setState(barmband::state::idle);
+      }
+    }
+
+    auto pairFoundMessage = barmband::messages::parsePairFoundMessage(msg);
+    if (pairFoundMessage.isOk) {
+      Serial.println("got pair found message");
+
+      if (currentState == barmband::state::paired && pairFoundMessage.firstBandId == ownID || pairFoundMessage.secondBandId == ownID ) {
+        // TODO: notify user
+        Serial.println("partner found me");
+        setState(barmband::state::idle);
+      }
+    }
   }
 
   if (strcmp(topic, "scan") == 0) {
-    //msg should contain two IDs who just matched
-    //these IDs should not match again in the future
+    // msg should contain two IDs who just matched
+    // these IDs should not match again in the future
     Serial.println(msg);
   }
   // Serial.println(msg);
@@ -113,6 +168,10 @@ void onMqttPublish(uint16_t packetId) {
   Serial.println("Publish acknowledged.");
   Serial.print("  packetId: ");
   Serial.println(packetId);
+  if (packetId == registrationPacketId) {
+    Serial.println("registration message send");
+    registrationPacketId = 0;
+  }
 }
 
 void WiFiEvent(WiFiEvent_t event) {
@@ -138,6 +197,7 @@ void connectToWifi() { WiFi.begin(WIFI_SSID, WIFI_PASSWORD); }
 
 void setup() {
   Serial.begin(9600);
+  setState(barmband::state::startup);
 
   mqttReconnectTimer =
       xTimerCreate("mqttTimer", pdMS_TO_TICKS(2000), pdFALSE, (void *)0,
