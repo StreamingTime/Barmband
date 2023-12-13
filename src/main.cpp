@@ -47,19 +47,16 @@ void onMqttConnect(bool sessionPresent) {
   Serial.println("Connected to MQTT.");
   Serial.print("Session present: ");
   Serial.println(sessionPresent);
-  uint16_t packetIdSub = mqttClient.subscribe(MQTT_TOPIC, 2);
-  Serial.print("Subscribing at QoS 2, packetId: ");
-  Serial.println(packetIdSub);
 
   // subscribe to topics to be able to receive messages
-  mqttClient.subscribe("barmband/setup", 0);
-  mqttClient.subscribe("barmband/challenge", 0);
+  mqttClient.subscribe(MQTT_SETUP_TOPIC, 0);
+  mqttClient.subscribe(MQTT_CHALLENGE_TOPIC, 0);
 
   // Registration
   char message[16];
   sprintf(message, "Hello %s", ownID);
   Serial.println(message);
-  registrationPacketId =  mqttClient.publish("barmband/setup", 1, true, message);
+  registrationPacketId =  mqttClient.publish(MQTT_SETUP_TOPIC, 1, true, message);
 }
 
 void onMqttDisconnect(AsyncMqttClientDisconnectReason reason) {
@@ -72,46 +69,20 @@ void onMqttDisconnect(AsyncMqttClientDisconnectReason reason) {
 
 void onMqttSubscribe(uint16_t packetId, uint8_t qos) {
   Serial.println("Subscribe acknowledged.");
-  Serial.print("  packetId: ");
-  Serial.println(packetId);
-  Serial.print("  qos: ");
-  Serial.println(qos);
 }
 
 void onMqttUnsubscribe(uint16_t packetId) {
   Serial.println("Unsubscribe acknowledged.");
-  Serial.print("  packetId: ");
-  Serial.println(packetId);
 }
 
 void onMqttMessage(char *topic, char *payload,
                    AsyncMqttClientMessageProperties properties, size_t len,
                    size_t index, size_t total) {
-  Serial.println("Publish received.");
-  Serial.print("  topic: ");
-  Serial.println(topic);
-  Serial.print("  qos: ");
-  Serial.println(properties.qos);
-  Serial.print("  dup: ");
-  Serial.println(properties.dup);
-  Serial.print("  retain: ");
-  Serial.println(properties.retain);
-  Serial.print("  len: ");
-  Serial.println(len);
-  Serial.print("  index: ");
-  Serial.println(index);
-  Serial.print("  total: ");
-  Serial.println(total);
+  Serial.printf("Publish received on topic %s\n", topic);
 
   String msg(payload, len);
 
-  if (strcmp(topic, "setup") == 0) {
-    // msg should contain basic setup stuff (whatever that could be)
-    Serial.println(msg);
-  }
-
-  if (strcmp(topic, "barmband/challenge") == 0) {
-    // msg should contain two IDs who are then searching for each other
+  if (strcmp(topic, MQTT_CHALLENGE_TOPIC) == 0) {
     Serial.println(msg);
     
     auto newPairMessage = barmband::messages::parseNewPairMessage(msg);
@@ -155,19 +126,9 @@ void onMqttMessage(char *topic, char *payload,
       }
     }
   }
-
-  if (strcmp(topic, "scan") == 0) {
-    // msg should contain two IDs who just matched
-    // these IDs should not match again in the future
-    Serial.println(msg);
-  }
-  // Serial.println(msg);
 }
 
 void onMqttPublish(uint16_t packetId) {
-  Serial.println("Publish acknowledged.");
-  Serial.print("  packetId: ");
-  Serial.println(packetId);
   if (packetId == registrationPacketId) {
     Serial.println("registration message send");
     registrationPacketId = 0;
@@ -236,20 +197,7 @@ void loop() {
 
   if (id != 0) {
     Serial.println(id);
-    /*
-    char *buff = (char *)malloc(30);
-    sprintf(buff, "{ownID: %s, message: Scanned card with ID %s",
-    mqttClient.getClientId(), id);
 
-    mqttClient.publish(MQTT_TOPIC, 1, true, buff);
-
-    // check if target id is correct
-    char *buff = (char *)malloc(25);
-
-    sprintf(buff, "scanned tag %s", id);
-
-    mqttClient.publish(MQTT_TOPIC, 1, true, buff);
-    */
   } else {
     // solid color
     for (int i = 0; i < NUM_LEDS; i++) {
