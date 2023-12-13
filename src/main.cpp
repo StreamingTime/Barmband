@@ -47,17 +47,16 @@ void onMqttConnect(bool sessionPresent) {
   Serial.println("Connected to MQTT.");
   Serial.print("Session present: ");
   Serial.println(sessionPresent);
-  mqttClient.subscribe(MQTT_TOPIC, 2);
 
   // subscribe to topics to be able to receive messages
-  mqttClient.subscribe("barmband/setup", 0);
-  mqttClient.subscribe("barmband/challenge", 0);
+  mqttClient.subscribe(MQTT_SETUP_TOPIC, 0);
+  mqttClient.subscribe(MQTT_CHALLENGE_TOPIC, 0);
 
   // Registration
   char message[16];
   sprintf(message, "Hello %s", ownID);
   Serial.println(message);
-  registrationPacketId =  mqttClient.publish("barmband/setup", 1, true, message);
+  registrationPacketId =  mqttClient.publish(MQTT_SETUP_TOPIC, 1, true, message);
 }
 
 void onMqttDisconnect(AsyncMqttClientDisconnectReason reason) {
@@ -88,7 +87,7 @@ void onMqttMessage(char *topic, char *payload,
     Serial.println(msg);
   }
 
-  if (strcmp(topic, "barmband/challenge") == 0) {
+  if (strcmp(topic, MQTT_CHALLENGE_TOPIC) == 0) {
     // msg should contain two IDs who are then searching for each other
     Serial.println(msg);
     
