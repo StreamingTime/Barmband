@@ -21,19 +21,41 @@ TimerHandle_t wifiReconnectTimer;
 #define LED_TYPE WS2812
 CRGB leds[NUM_LEDS];
 
-#define UPDATES_PER_SECOND 100
-
 byte ownID[4] = {0x63, 0xD5, 0x92, 0xA9};
 
 int buttonLastState = HIGH;
 int buttonCurrentState;  // the previous state from the input pin
 bool sent = false;
+bool searching = false;  // TODO: remove/replace for actual state handling
+
+uint8_t brightness = BRIGHTNESS;
 
 Rdm6300 rdm6300;
 
 void connectToMqtt() {
   Serial.println("Connecting to MQTT...");
   mqttClient.connect();
+}
+
+void changeLED(CRGB color) {
+  for (int i = 0; i < NUM_LEDS; i++) {
+    leds[i] = color;
+  }
+  FastLED.show();
+}
+
+void breathingAnimation(bool state) {
+  // Perform the breathing/pulse animation
+  if (state) {
+    int breathingValue =
+        (exp(sin(millis() / 2000.0 * PI)) - 0.36787944) * 108.0;
+    brightness = map(breathingValue, 0, 255, 0, 255);
+
+    for (int i = 0; i < NUM_LEDS; i++) {
+      leds[i] = CRGB(brightness, brightness, brightness);
+    }
+  }
+  FastLED.show();
 }
 
 void onMqttConnect(bool sessionPresent) {
@@ -177,14 +199,12 @@ void setup() {
 
   pinMode(BUTTON_PIN, INPUT_PULLDOWN);
 
-  for (int i = 0; i < NUM_LEDS; i++) {
-    leds[i] = CRGB::Grey;
-  }
-  FastLED.show();
+  changeLED(CRGB::Gold);
 }
 
 void loop() {
   // todo: blink/wa
+  breathingAnimation(searching);
 
   byte id = rdm6300.get_tag_id();
 
@@ -192,38 +212,16 @@ void loop() {
 
   // Request pardner 🤠
   if (buttonLastState == LOW && buttonCurrentState == HIGH && !sent) {
+    // changeLED(CRGB::Aqua);
+    FastLED.show();
     char message[17];
     sprintf(message, "Search %02X%02X%02X%02X", ownID[0], ownID[1], ownID[2],
             ownID[3]);
     Serial.println(message);
     mqttClient.publish("barmband/challenge", 1, true, message);
     sent = true;
+    searching = true;  // TODO: replace with actual state handling
   }
-
   buttonLastState = buttonCurrentState;
-
   sent = false;
-
-  if (id != 0) {
-    Serial.println(id);
-    /*
-    char *buff = (char *)malloc(30);
-    sprintf(buff, "{ownID: %s, message: Scanned card with ID %s",
-    mqttClient.getClientId(), id);
-
-    mqttClient.publish(MQTT_TOPIC, 1, true, buff);
-
-    // check if target id is correct
-    char *buff = (char *)malloc(25);
-
-    sprintf(buff, "scanned tag %s", id);
-
-    mqttClient.publish(MQTT_TOPIC, 1, true, buff);
-    */
-  } else {
-    // solid color
-    for (int i = 0; i < NUM_LEDS; i++) {
-      leds[i] = CRGB::Cyan;
-    }
-  }
 }
