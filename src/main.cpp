@@ -6,6 +6,7 @@
 #include "Arduino.h"
 #include "config.h"
 #include "readChip.hpp"
+#include "state.h"
 
 AsyncMqttClient mqttClient;
 TimerHandle_t mqttReconnectTimer;
@@ -23,8 +24,10 @@ CRGB leds[NUM_LEDS];
 #define UPDATES_PER_SECOND 100
 
 String ownID = "63D592A9";
+String partnerID = "";
 
-int state = 0;
+barmband::state::bandState currentState = barmband::state::startup;
+
 Rdm6300 rdm6300;
 
 // packet id of the last registration message sent
@@ -110,9 +113,19 @@ void onMqttMessage(char *topic, char *payload,
     auto newPairMessage = barmband::messages::parseNewPairMessage(msg);
     if (newPairMessage.isOk) {
       Serial.println("got new pair message");
-      if (newPairMessage.firstBandId == ownID || newPairMessage.secondBandId == ownID) {
-        Serial.println("It's for me!");
+
+      if (currentState == barmband::state::waiting) {
+        if (newPairMessage.firstBandId == ownID) {
+          Serial.println("It's for me!");
+          partnerID = newPairMessage.secondBandId;
+        } else if (newPairMessage.secondBandId == ownID) {
+          Serial.println("It's for me!");
+          partnerID = newPairMessage.firstBandId;
+        }
+        Serial.printf("New partner: %s\n", partnerID);
+        currentState = barmband::state::paired;
       }
+      
     }
 
   }
