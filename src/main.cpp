@@ -1,25 +1,18 @@
 #include <AsyncMqttClient.h>
-#include <FastLED.h>
 #include <WiFi.h>
 #include <rdm6300.h>
 
 #include "Arduino.h"
 #include "config.h"
+#include "ledController.hpp"
 #include "readChip.hpp"
 
 AsyncMqttClient mqttClient;
 TimerHandle_t mqttReconnectTimer;
 TimerHandle_t wifiReconnectTimer;
 
-#define LED_PIN 12
 #define RDM6300_RX_PIN 5
 #define BUTTON_PIN 4
-
-// #define NUM_LEDS 11
-#define NUM_LEDS 8
-#define BRIGHTNESS 20
-#define LED_TYPE WS2812
-CRGB leds[NUM_LEDS];
 
 byte ownID[4] = {0x63, 0xD5, 0x92, 0xA9};
 
@@ -28,34 +21,11 @@ int buttonCurrentState;  // the previous state from the input pin
 bool sent = false;
 bool searching = false;  // TODO: remove/replace for actual state handling
 
-uint8_t brightness = BRIGHTNESS;
-
 Rdm6300 rdm6300;
 
 void connectToMqtt() {
   Serial.println("Connecting to MQTT...");
   mqttClient.connect();
-}
-
-void changeLED(CRGB color) {
-  for (int i = 0; i < NUM_LEDS; i++) {
-    leds[i] = color;
-  }
-  FastLED.show();
-}
-
-void breathingAnimation(bool state) {
-  // Perform the breathing/pulse animation
-  if (state) {
-    int breathingValue =
-        (exp(sin(millis() / 2000.0 * PI)) - 0.36787944) * 108.0;
-    brightness = map(breathingValue, 0, 255, 0, 255);
-
-    for (int i = 0; i < NUM_LEDS; i++) {
-      leds[i] = CRGB(brightness, brightness, brightness);
-    }
-  }
-  FastLED.show();
 }
 
 void onMqttConnect(bool sessionPresent) {
@@ -188,18 +158,13 @@ void setup() {
   connectToWifi();
 
   init();
-
-  FastLED.addLeds<WS2812, LED_PIN, RGB>(leds,
-                                        NUM_LEDS);  // GRB ordering is typical
-  FastLED.setBrightness(BRIGHTNESS);
+  initLED();
 
   rdm6300.begin(RDM6300_RX_PIN);
 
   Serial.println("\nrdm6300 started...\n");
 
   pinMode(BUTTON_PIN, INPUT_PULLDOWN);
-
-  changeLED(CRGB::Gold);
 }
 
 void loop() {
@@ -212,8 +177,6 @@ void loop() {
 
   // Request pardner 🤠
   if (buttonLastState == LOW && buttonCurrentState == HIGH && !sent) {
-    // changeLED(CRGB::Aqua);
-    FastLED.show();
     char message[17];
     sprintf(message, "Search %02X%02X%02X%02X", ownID[0], ownID[1], ownID[2],
             ownID[3]);

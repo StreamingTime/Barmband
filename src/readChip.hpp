@@ -5,8 +5,6 @@
 #define SS_PIN 5
 #define RST_PIN 13
 
-const int LED_PIN = 26;
-
 MFRC522 rfid(SS_PIN, RST_PIN);
 
 const size_t TAG_ID_SIZE = 4;
