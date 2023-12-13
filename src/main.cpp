@@ -1,10 +1,11 @@
 #include <AsyncMqttClient.h>
 #include <WiFi.h>
 #include <rdm6300.h>
-#include "messages.h"
+
 #include "Arduino.h"
 #include "config.h"
 #include "ledController.hpp"
+#include "messages.h"
 #include "readChip.hpp"
 #include "state.h"
 
@@ -20,14 +21,10 @@ String partnerID = "";
 
 barmband::state::bandState currentState = barmband::state::startup;
 
-<<<<<<< HEAD
 int buttonLastState = HIGH;
 int buttonCurrentState;  // the previous state from the input pin
-bool sent = false;
-bool searching = false;  // TODO: remove/replace for actual state handling
+bool buttonPressed = false; // prevent button event from being triggered twice (on press & on release)
 
-=======
->>>>>>> origin/main
 Rdm6300 rdm6300;
 
 // packet id of the last registration message sent
@@ -230,22 +227,22 @@ void setup() {
 
 void loop() {
   // todo: blink/wa
-  breathingAnimation(searching);
 
   byte id = rdm6300.get_tag_id();
 
   buttonCurrentState = digitalRead(BUTTON_PIN);
 
   // Request pardner 🤠
-  if (buttonLastState == LOW && buttonCurrentState == HIGH && !sent) {
-    char message[17];
-    sprintf(message, "Search %02X%02X%02X%02X", ownID[0], ownID[1], ownID[2],
-            ownID[3]);
+  if (buttonLastState == LOW && buttonCurrentState == HIGH && !buttonPressed) {
+    switch (currentState) {
+      case (barmband::state::idle):
+    char message[25];
+    sprintf(message, "Request partner %s", ownID);
     Serial.println(message);
     mqttClient.publish("barmband/challenge", 1, true, message);
-    sent = true;
-    searching = true;  // TODO: replace with actual state handling
+        buttonPressed = true;
+        break;
+    }
   }
   buttonLastState = buttonCurrentState;
-  sent = false;
 }
