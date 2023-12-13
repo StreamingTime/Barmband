@@ -22,7 +22,7 @@ CRGB leds[NUM_LEDS];
 
 #define UPDATES_PER_SECOND 100
 
-byte ownID[4] = {0x63, 0xD5, 0x92, 0xA9};
+String ownID = "63D592A9";
 
 int state = 0;
 Rdm6300 rdm6300;

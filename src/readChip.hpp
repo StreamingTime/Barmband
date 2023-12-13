@@ -70,6 +70,9 @@ String read() {
   // Stop encryption on PCD
   rfid.PCD_StopCrypto1();
 
+  char s[8];
+
+  sprintf(s, "%X%X%X%X", nuidPICC[0], nuidPICC[1], nuidPICC[2], nuidPICC[3]);
   return String(nuidPICC, TAG_ID_SIZE);
 }
 
