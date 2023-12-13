@@ -8,6 +8,7 @@ import (
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"gitlab.hs-flensburg.de/flar3845/barmband/bandcommand"
+	"gitlab.hs-flensburg.de/flar3845/barmband/bandcommand/barmband"
 	"gitlab.hs-flensburg.de/flar3845/barmband/bandcommand/messaging"
 )
 
@@ -46,12 +47,17 @@ func connectMqtt(host string, port string) (mqtt.Client, error) {
 
 func main() {
 
-	bc := bandcommand.New()
-
 	client, err := connectMqtt(MqttBroker, MqttPort)
 	if err != nil {
 		log.Fatalf("Failed to connect to MQTT broker: %s", err)
 	}
+
+	bc := bandcommand.New(func(pair barmband.Pair) {
+		firstS := fmt.Sprintf("%X", pair.First)
+		secondS := fmt.Sprintf("%X", pair.Second)
+
+		client.Publish(ChallengeTopic, 0, false, fmt.Sprintf("New pair %s %s", firstS, secondS))
+	})
 
 	messageHandler := mqttMessageHandler(bc)
 
