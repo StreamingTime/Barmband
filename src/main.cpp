@@ -27,6 +27,9 @@ byte ownID[4] = {0x63, 0xD5, 0x92, 0xA9};
 int state = 0;
 Rdm6300 rdm6300;
 
+// packet id of the last registration message sent
+uint16_t registrationPacketId = 0;
+
 void connectToMqtt() {
   Serial.println("Connecting to MQTT...");
   mqttClient.connect();
@@ -42,13 +45,14 @@ void onMqttConnect(bool sessionPresent) {
 
   // subscribe to topics to be able to receive messages
   mqttClient.subscribe("barmband/setup", 0);
+  mqttClient.subscribe("barmband/challenge", 0);
 
   // Registration
   char message[16];
   sprintf(message, "Hello %02X%02X%02X%02X", ownID[0], ownID[1], ownID[2],
           ownID[3]);
   Serial.println(message);
-  mqttClient.publish("barmband/setup", 1, true, message);
+  registrationPacketId =  mqttClient.publish("barmband/setup", 1, true, message);
 }
 
 void onMqttDisconnect(AsyncMqttClientDisconnectReason reason) {
@@ -116,6 +120,10 @@ void onMqttPublish(uint16_t packetId) {
   Serial.println("Publish acknowledged.");
   Serial.print("  packetId: ");
   Serial.println(packetId);
+  if (packetId == registrationPacketId) {
+    Serial.println("registration message send");
+    registrationPacketId = 0;
+  }
 }
 
 void WiFiEvent(WiFiEvent_t event) {
