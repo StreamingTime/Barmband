@@ -192,9 +192,8 @@ void loop() {
 
   // Request pardner 🤠
   if (buttonLastState == LOW && buttonCurrentState == HIGH && !sent) {
-    char message[17];
-    sprintf(message, "Search %02X%02X%02X%02X", ownID[0], ownID[1], ownID[2],
-            ownID[3]);
+    char message[25];
+    sprintf(message, "Request partner %s", ownID);
     Serial.println(message);
     mqttClient.publish("barmband/challenge", 1, true, message);
     sent = true;
