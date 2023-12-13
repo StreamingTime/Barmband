@@ -13,10 +13,11 @@ TimerHandle_t wifiReconnectTimer;
 
 #define LED_PIN 12
 #define RDM6300_RX_PIN 5
+#define BUTTON_PIN 4
 
 // #define NUM_LEDS 11
 #define NUM_LEDS 8
-#define BRIGHTNESS 64
+#define BRIGHTNESS 20
 #define LED_TYPE WS2812
 CRGB leds[NUM_LEDS];
 
@@ -24,7 +25,10 @@ CRGB leds[NUM_LEDS];
 
 byte ownID[4] = {0x63, 0xD5, 0x92, 0xA9};
 
-int state = 0;
+int buttonLastState = HIGH;
+int buttonCurrentState;  // the previous state from the input pin
+bool sent = false;
+
 Rdm6300 rdm6300;
 
 void connectToMqtt() {
@@ -170,12 +174,35 @@ void setup() {
   rdm6300.begin(RDM6300_RX_PIN);
 
   Serial.println("\nrdm6300 started...\n");
+
+  pinMode(BUTTON_PIN, INPUT_PULLDOWN);
+
+  for (int i = 0; i < NUM_LEDS; i++) {
+    leds[i] = CRGB::Grey;
+  }
+  FastLED.show();
 }
 
 void loop() {
   // todo: blink/wa
 
   byte id = rdm6300.get_tag_id();
+
+  buttonCurrentState = digitalRead(BUTTON_PIN);
+
+  // Request pardner 🤠
+  if (buttonLastState == LOW && buttonCurrentState == HIGH && !sent) {
+    char message[17];
+    sprintf(message, "Search %02X%02X%02X%02X", ownID[0], ownID[1], ownID[2],
+            ownID[3]);
+    Serial.println(message);
+    mqttClient.publish("barmband/challenge", 1, true, message);
+    sent = true;
+  }
+
+  buttonLastState = buttonCurrentState;
+
+  sent = false;
 
   if (id != 0) {
     Serial.println(id);
@@ -199,5 +226,4 @@ void loop() {
       leds[i] = CRGB::Cyan;
     }
   }
-  FastLED.show();
 }
