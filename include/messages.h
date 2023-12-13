@@ -14,7 +14,14 @@ struct AbortMessage {
     bool isOk;
 };
 
+struct PairFoundMessage {
+  String firstBandId;
+  String secondBandId;
+  bool isOk;
+};
+
 NewPairMessage parseNewPairMessage(String message);
 AbortMessage parseAbortMessage(String message);
+PairFoundMessage parsePairFoundMessage(String message);
 
 }

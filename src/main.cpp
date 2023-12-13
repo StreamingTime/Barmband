@@ -144,6 +144,17 @@ void onMqttMessage(char *topic, char *payload,
         setState(barmband::state::idle);
       }
     }
+
+    auto pairFoundMessage = barmband::messages::parsePairFoundMessage(msg);
+    if (pairFoundMessage.isOk) {
+      Serial.println("got pair found message");
+
+      if (currentState == barmband::state::paired && pairFoundMessage.firstBandId == ownID || pairFoundMessage.secondBandId == ownID ) {
+        // TODO: notify user
+        Serial.println("partner found me");
+        setState(barmband::state::idle);
+      }
+    }
   }
 
   if (strcmp(topic, "scan") == 0) {

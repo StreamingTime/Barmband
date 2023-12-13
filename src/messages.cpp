@@ -44,4 +44,27 @@ AbortMessage parseAbortMessage(String message) {
     return msg;
 }
 
+PairFoundMessage parsePairFoundMessage(String message) {
+
+    PairFoundMessage msg;
+    msg.isOk = false;
+
+    char bandACstr[9];
+    char bandBCstr[9];
+
+    size_t n = sscanf(message.c_str(), "Pair found %s %s", bandACstr, bandBCstr);
+
+    if (n != 2) {
+        return msg;
+    }
+
+    msg.firstBandId = String(bandACstr);
+    msg.secondBandId = String(bandBCstr);
+    msg.isOk = true;
+
+    Serial.println(msg.firstBandId);
+    Serial.println(msg.secondBandId);
+    return msg;
+}
+
 }
