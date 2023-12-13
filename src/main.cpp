@@ -2,7 +2,7 @@
 #include <FastLED.h>
 #include <WiFi.h>
 #include <rdm6300.h>
-
+#include "messages.h"
 #include "Arduino.h"
 #include "config.h"
 #include "readChip.hpp"
@@ -103,9 +103,18 @@ void onMqttMessage(char *topic, char *payload,
     Serial.println(msg);
   }
 
-  if (strcmp(topic, "matchmaking") == 0) {
+  if (strcmp(topic, "barmband/challenge") == 0) {
     // msg should contain two IDs who are then searching for each other
     Serial.println(msg);
+    
+    auto newPairMessage = barmband::messages::parseNewPairMessage(msg);
+    if (newPairMessage.isOk) {
+      Serial.println("got new pair message");
+      if (newPairMessage.firstBandId == ownID || newPairMessage.secondBandId == ownID) {
+        Serial.println("It's for me!");
+      }
+    }
+
   }
 
   if (strcmp(topic, "scan") == 0) {
