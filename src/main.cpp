@@ -2,9 +2,10 @@
 #include <FastLED.h>
 #include <WiFi.h>
 #include <rdm6300.h>
-#include "messages.h"
+
 #include "Arduino.h"
 #include "config.h"
+#include "messages.h"
 #include "readChip.hpp"
 #include "state.h"
 
@@ -31,7 +32,7 @@ barmband::state::bandState currentState = barmband::state::startup;
 
 int buttonLastState = HIGH;
 int buttonCurrentState;  // the previous state from the input pin
-bool sent = false;
+bool buttonPressed = false; // prevent button event from being triggered twice (on press & on release)
 
 Rdm6300 rdm6300;
 
@@ -249,17 +250,21 @@ void loop() {
   buttonCurrentState = digitalRead(BUTTON_PIN);
 
   // Request pardner 🤠
-  if (buttonLastState == LOW && buttonCurrentState == HIGH && !sent) {
+  if (buttonLastState == LOW && buttonCurrentState == HIGH && !buttonPressed) {
+    switch (currentState) {
+      case (barmband::state::idle):
     char message[25];
     sprintf(message, "Request partner %s", ownID);
     Serial.println(message);
     mqttClient.publish("barmband/challenge", 1, true, message);
-    sent = true;
+        buttonPressed = true;
+        break;
+    }
   }
 
   buttonLastState = buttonCurrentState;
 
-  sent = false;
+  buttonPressed = false;
 
   if (id != 0) {
     Serial.println(id);
