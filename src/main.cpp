@@ -82,13 +82,7 @@ void onMqttMessage(char *topic, char *payload,
 
   String msg(payload, len);
 
-  if (strcmp(topic, "setup") == 0) {
-    // msg should contain basic setup stuff (whatever that could be)
-    Serial.println(msg);
-  }
-
   if (strcmp(topic, MQTT_CHALLENGE_TOPIC) == 0) {
-    // msg should contain two IDs who are then searching for each other
     Serial.println(msg);
     
     auto newPairMessage = barmband::messages::parseNewPairMessage(msg);
@@ -203,20 +197,7 @@ void loop() {
 
   if (id != 0) {
     Serial.println(id);
-    /*
-    char *buff = (char *)malloc(30);
-    sprintf(buff, "{ownID: %s, message: Scanned card with ID %s",
-    mqttClient.getClientId(), id);
 
-    mqttClient.publish(MQTT_TOPIC, 1, true, buff);
-
-    // check if target id is correct
-    char *buff = (char *)malloc(25);
-
-    sprintf(buff, "scanned tag %s", id);
-
-    mqttClient.publish(MQTT_TOPIC, 1, true, buff);
-    */
   } else {
     // solid color
     for (int i = 0; i < NUM_LEDS; i++) {
