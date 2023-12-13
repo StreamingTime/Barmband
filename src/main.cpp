@@ -22,8 +22,9 @@ String partnerID = "";
 barmband::state::bandState currentState = barmband::state::startup;
 
 int buttonLastState = HIGH;
-int buttonCurrentState;  // the previous state from the input pin
-bool buttonPressed = false; // prevent button event from being triggered twice (on press & on release)
+int buttonCurrentState;      // the previous state from the input pin
+bool buttonPressed = false;  // prevent button event from being triggered twice
+                             // (on press & on release)
 
 Rdm6300 rdm6300;
 
@@ -56,7 +57,7 @@ void onMqttConnect(bool sessionPresent) {
   char message[16];
   sprintf(message, "Hello %s", ownID);
   Serial.println(message);
-  registrationPacketId =  mqttClient.publish("barmband/setup", 1, true, message);
+  registrationPacketId = mqttClient.publish("barmband/setup", 1, true, message);
 }
 
 void onMqttDisconnect(AsyncMqttClientDisconnectReason reason) {
@@ -110,7 +111,7 @@ void onMqttMessage(char *topic, char *payload,
   if (strcmp(topic, "barmband/challenge") == 0) {
     // msg should contain two IDs who are then searching for each other
     Serial.println(msg);
-    
+
     auto newPairMessage = barmband::messages::parseNewPairMessage(msg);
     if (newPairMessage.isOk) {
       Serial.println("got new pair message");
@@ -126,7 +127,6 @@ void onMqttMessage(char *topic, char *payload,
         Serial.printf("New partner: %s\n", partnerID);
         setState(barmband::state::paired);
       }
-      
     }
 
     // TODO: don't run other parsers when one succeeds
@@ -134,7 +134,8 @@ void onMqttMessage(char *topic, char *payload,
     if (abortMessage.isOk) {
       Serial.println("got abort message");
 
-      if (currentState == barmband::state::paired && abortMessage.bandId == partnerID) {
+      if (currentState == barmband::state::paired &&
+          abortMessage.bandId == partnerID) {
         // TODO: notify user
         Serial.println("partner aborted challenge");
         setState(barmband::state::idle);
@@ -145,7 +146,9 @@ void onMqttMessage(char *topic, char *payload,
     if (pairFoundMessage.isOk) {
       Serial.println("got pair found message");
 
-      if (currentState == barmband::state::paired && pairFoundMessage.firstBandId == ownID || pairFoundMessage.secondBandId == ownID ) {
+      if (currentState == barmband::state::paired &&
+              pairFoundMessage.firstBandId == ownID ||
+          pairFoundMessage.secondBandId == ownID) {
         // TODO: notify user
         Serial.println("partner found me");
         setState(barmband::state::idle);
@@ -227,6 +230,7 @@ void setup() {
 
 void loop() {
   // todo: blink/wa
+  handleLED(currentState);
 
   byte id = rdm6300.get_tag_id();
 
@@ -236,10 +240,10 @@ void loop() {
   if (buttonLastState == LOW && buttonCurrentState == HIGH && !buttonPressed) {
     switch (currentState) {
       case (barmband::state::idle):
-    char message[25];
-    sprintf(message, "Request partner %s", ownID);
-    Serial.println(message);
-    mqttClient.publish("barmband/challenge", 1, true, message);
+        char message[25];
+        sprintf(message, "Request partner %s", ownID);
+        Serial.println(message);
+        mqttClient.publish("barmband/challenge", 1, true, message);
         buttonPressed = true;
         break;
     }
