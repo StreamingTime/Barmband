@@ -4,7 +4,7 @@
 #include <rdm6300.h>
 #include "messages.h"
 #include "Arduino.h"
-#include "config.h"
+#include "config_makersspot.h"
 #include "readChip.hpp"
 #include "state.h"
 
@@ -32,6 +32,11 @@ Rdm6300 rdm6300;
 
 // packet id of the last registration message sent
 uint16_t registrationPacketId = 0;
+
+void setState(barmband::state::bandState newState) {
+  Serial.printf("New state: %s\n", barmband::state::bandStateNames[newState]);
+  currentState = newState;
+}
 
 void connectToMqtt() {
   Serial.println("Connecting to MQTT...");
@@ -123,11 +128,22 @@ void onMqttMessage(char *topic, char *payload,
           partnerID = newPairMessage.firstBandId;
         }
         Serial.printf("New partner: %s\n", partnerID);
-        currentState = barmband::state::paired;
+        setState(barmband::state::paired);
       }
       
     }
 
+    // TODO: don't run other parsers when one succeeds
+    auto abortMessage = barmband::messages::parseAbortMessage(msg);
+    if (abortMessage.isOk) {
+      Serial.println("got abort message");
+
+      if (currentState == barmband::state::paired && abortMessage.bandId == partnerID) {
+        // TODO: notify user
+        Serial.println("partner aborted challenge");
+        setState(barmband::state::idle);
+      }
+    }
   }
 
   if (strcmp(topic, "scan") == 0) {
@@ -171,6 +187,7 @@ void connectToWifi() { WiFi.begin(WIFI_SSID, WIFI_PASSWORD); }
 
 void setup() {
   Serial.begin(9600);
+  setState(barmband::state::startup);
 
   mqttReconnectTimer =
       xTimerCreate("mqttTimer", pdMS_TO_TICKS(2000), pdFALSE, (void *)0,

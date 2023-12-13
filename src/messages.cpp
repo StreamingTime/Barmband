@@ -26,4 +26,22 @@ NewPairMessage parseNewPairMessage(String message) {
     return msg;
 }
 
+AbortMessage parseAbortMessage(String message) {
+
+    AbortMessage msg;
+    msg.isOk = false;
+
+    char bandCstr[9];
+
+    size_t n = sscanf(message.c_str(), "Abort %s", bandCstr);
+
+    if (n != 1) {
+        return msg;
+    }
+
+    msg.bandId = String(bandCstr);
+    msg.isOk = true;
+    return msg;
+}
+
 }
