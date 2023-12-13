@@ -4,7 +4,7 @@
 #include <rdm6300.h>
 #include "messages.h"
 #include "Arduino.h"
-#include "config_makersspot.h"
+#include "config.h"
 #include "readChip.hpp"
 #include "state.h"
 
