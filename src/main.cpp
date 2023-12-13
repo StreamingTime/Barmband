@@ -57,8 +57,7 @@ void onMqttConnect(bool sessionPresent) {
 
   // Registration
   char message[16];
-  sprintf(message, "Hello %02X%02X%02X%02X", ownID[0], ownID[1], ownID[2],
-          ownID[3]);
+  sprintf(message, "Hello %s", ownID);
   Serial.println(message);
   registrationPacketId =  mqttClient.publish("barmband/setup", 1, true, message);
 }
