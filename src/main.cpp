@@ -6,7 +6,6 @@
 #include "config.h"
 #include "ledController.hpp"
 #include "messages.h"
-#include "readChip.hpp"
 #include "state.h"
 
 AsyncMqttClient mqttClient;
