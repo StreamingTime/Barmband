@@ -129,7 +129,7 @@ void onMqttMessage(char *topic, char *payload,
 
 void onMqttPublish(uint16_t packetId) {
   if (packetId == registrationPacketId) {
-    Serial.println("registration message send");
+    Serial.println("registration message sent");
     registrationPacketId = 0;
   }
 }
