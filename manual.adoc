@@ -1,0 +1,67 @@
+= Barmband
+:sectnums:
+:toc:
+:nofooter:
+
+== Prerequisites
+
+Depending on the operating system you use, make sure you have the correct drivers in place to flash the ESP.
+
+== Parts
+
+
+
+- an ESP32 https://www.makershop.de/plattformen/nodemcu/espressif-esp32-dev-kit-board/[board]
+- an https://www.makershop.de/module/eingabe/rdm6300-rfid-reder-modul-arduino-raspberry-pi-esp8266/[RDM6300 RFID reader]
+- a compatible RFID card (EM4100)
+- a chain of eight WS2812 RGB LEDs
+
+- jumper wires, soldering equipment or some other way to connect the parts
+
+- a power bank or some other mobile power supply
+
+== Tools
+
+Recommended, but not needed
+
+- soldering equipment
+- a multimeter to check and debug the wiring
+
+== Assembling
+
+=== Connecting the parts
+
+[options="header"]
+|==================================
+| Device pin          | ESP32 board pin
+| **Tag reader (RDM3600)** |            
+|          TODO        |     
+      
+| **LED (WS2812)**          |            
+| 5V                     | 5V        
+| GND | GND
+| Din |                   12   
+| ** Button **        |
+|         TODO            | TODO
+|           TODO          | TODO        
+|==================================
+
+TODO: schema
+
+=== Flashing the software
+
+We use https://platformio.org/[PlatformIO] to build and flash the software.
+Please follow the instructions provided https://platformio.org/install/integration[here] to install PlatformIO.
+We will assume that a working `PlatformIO Core` installation is available on your machine during the next steps.
+
+- Get the source code from the https://gitlab.hs-flensburg.de/teaching/microcontroller-programmierung-wise-23-24/barmband git repository
+- Create a copy of the `include/config_example.h` and name it `include/config.h`
+- Edit this file to fit your needs, especially `WIFI_SSID`  and `WIFI_PASSWORD`
+- Build and flash the software using
+```shell
+pio run --target upload
+```
+- You can view the serial output using
+```shell
+pio device monitor
+```
