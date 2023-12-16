@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"gitlab.hs-flensburg.de/flar3845/barmband/bandcommand/barmband"
+	"gitlab.hs-flensburg.de/flar3845/barmband/bandcommand/color"
 	"gitlab.hs-flensburg.de/flar3845/barmband/bandcommand/messaging"
 )
 
@@ -170,7 +171,14 @@ func (bc *DefaultBandCommand) HandleRequestPartnerMessage(message *messaging.Req
 		return
 	}
 
-	pair := barmband.NewPair(message.BarmbandId, *partnerId)
+	c, err := bc.GetRandomColor()
+
+	if err != nil {
+		log.Printf("Error getting random color: %s\n", err)
+		return
+	}
+
+	pair := barmband.NewPair(message.BarmbandId, *partnerId, c)
 
 	log.Printf("Found pair %s %s\n", pair.First, pair.Second)
 
@@ -182,6 +190,24 @@ func (bc *DefaultBandCommand) HandleRequestPartnerMessage(message *messaging.Req
 	bc.setWantsPair(pair.Second, false)
 
 	bc.pairFoundCallback(pair)
+}
+
+func (bc *DefaultBandCommand) GetRandomColor() (string, error) {
+	return color.GetRandomColor(bc.GetUsedColors())
+}
+
+func (bc *DefaultBandCommand) GetUsedColors() []string {
+	bc.pairsMutex.RLock()
+
+	var colors []string
+
+	for _, pair := range bc.pairs {
+		colors = append(colors, pair.Color)
+	}
+
+	bc.pairsMutex.RUnlock()
+
+	return colors
 }
 
 func (bc *DefaultBandCommand) isRegistered(barmbandId barmband.BarmbandId) bool {

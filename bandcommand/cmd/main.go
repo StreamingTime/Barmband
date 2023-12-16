@@ -17,7 +17,7 @@ var f mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
 	fmt.Printf("MSG: %s\n", msg.Payload())
 }
 
-const MqttBroker = "test.mosquitto.org"
+const MqttBroker = "localhost"
 const MqttPort = "1883"
 const ChallengeTopic = "barmband/challenge"
 
@@ -56,7 +56,7 @@ func main() {
 		firstS := fmt.Sprintf("%X", pair.First)
 		secondS := fmt.Sprintf("%X", pair.Second)
 
-		client.Publish(ChallengeTopic, 0, false, fmt.Sprintf("New pair %s %s", firstS, secondS))
+		client.Publish(ChallengeTopic, 0, false, fmt.Sprintf("New pair %s %s %s", firstS, secondS, pair.Color))
 	})
 
 	messageHandler := mqttMessageHandler(bc)
