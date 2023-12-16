@@ -8,32 +8,32 @@ import (
 
 // List of colors picked from https://en.wikipedia.org/wiki/Help:Distinguishable_colors
 var Colors = []string{
-	"0xF0A3FF", // Amethyst
-	"0x0075DC", // Blue
-	"0x993F00", // Caramel
-	"0x4C005C", // Damson
-	"0x191919", // Ebony
-	"0x005C31", // Forest
-	"0x2BCE48", // Green
-	"0xFFCC99", // Honeydew
-	"0x808080", // Iron
-	"0x94FFB5", // Jade
-	"0x8F7C00", // Khaki
-	"0x9DCC00", // Lime
-	"0xC20088", // Mallow
-	"0x003380", // Navy
-	"0xFFA405", // Orpiment
-	"0xFFA8BB", // Pink
-	"0x426600", // Quagmire
-	"0xFF0010", // Red
-	"0x5EF1F2", // Sky
-	"0x00998F", // Turquoise
-	"0xE0FF66", // Uranium
-	"0x740AFF", // Violet
-	"0x990000", // Wine
-	"0xFFFF80", // Xanthin
-	"0xFFE100", // Yellow
-	"0xFF5005", // Zinnia
+	"F0A3FF", // Amethyst
+	"0075DC", // Blue
+	"993F00", // Caramel
+	"4C005C", // Damson
+	"191919", // Ebony
+	"005C31", // Forest
+	"2BCE48", // Green
+	"FFCC99", // Honeydew
+	"808080", // Iron
+	"94FFB5", // Jade
+	"8F7C00", // Khaki
+	"9DCC00", // Lime
+	"C20088", // Mallow
+	"003380", // Navy
+	"FFA405", // Orpiment
+	"FFA8BB", // Pink
+	"426600", // Quagmire
+	"FF0010", // Red
+	"5EF1F2", // Sky
+	"00998F", // Turquoise
+	"E0FF66", // Uranium
+	"740AFF", // Violet
+	"990000", // Wine
+	"FFFF80", // Xanthin
+	"FFE100", // Yellow
+	"FF5005", // Zinnia
 }
 
 var ErrNoColorAvailable = errors.New("no color available")
