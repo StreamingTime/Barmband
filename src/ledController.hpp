@@ -35,7 +35,7 @@ void initLED() {
   solidColor(CRGB::Black);
 }
 
-void handleLED(barmband::state::bandState state) {
+void handleLED(barmband::state::bandState state, uint32_t hexColor) {
   switch (state) {
     case barmband::state::startup:
       solidColor(CRGB::Blue);
@@ -61,7 +61,7 @@ void handleLED(barmband::state::bandState state) {
       break;
 
     case barmband::state::paired:
-      solidColor(CRGB::Blue);  // TODO: change color depending on match
+      solidColor(CRGB(hexColor));
       break;
 
     default:

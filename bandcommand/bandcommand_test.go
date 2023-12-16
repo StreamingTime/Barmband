@@ -13,6 +13,7 @@ import (
 var bandIdA = barmband.BarmbandId([]byte{0xAA, 0xAA, 0xAA, 0xAA})
 var bandIdB = barmband.BarmbandId([]byte{0xBB, 0xBB, 0xBB, 0xBB})
 var bandIdC = barmband.BarmbandId([]byte{0xCC, 0xCC, 0xCC, 0xCC})
+var defaultColor = "red"
 
 func Test_defaultMessageHandler(t *testing.T) {
 
@@ -103,7 +104,7 @@ func TestBandCommand_HandlePairFoundMessage(t *testing.T) {
 					barmband.NewBarmband(bandIdC),
 				}
 
-				bc.pairs = append(bc.pairs, barmband.NewPair(tc.first, tc.second))
+				bc.pairs = append(bc.pairs, barmband.NewPair(tc.first, tc.second, defaultColor))
 
 				pairFoundMsg := messaging.PairFoundMessage{FirstBarmbandId: tc.first, SecondBarmbandId: tc.second}
 
@@ -133,7 +134,7 @@ func TestBandCommand_HandlePairFoundMessage(t *testing.T) {
 		}
 
 		// Match: A and B
-		bc.pairs = append(bc.pairs, barmband.NewPair(bandIdA, bandIdB))
+		bc.pairs = append(bc.pairs, barmband.NewPair(bandIdA, bandIdB, defaultColor))
 
 		// Message reports match A and C
 		pairFoundMsg := messaging.PairFoundMessage{FirstBarmbandId: bandIdA, SecondBarmbandId: bandIdC}
@@ -214,7 +215,7 @@ func TestBandCommand_HandleAbortMessage(t *testing.T) {
 		}
 
 		// Match: A and B
-		bc.pairs = append(bc.pairs, barmband.NewPair(bandIdA, bandIdB))
+		bc.pairs = append(bc.pairs, barmband.NewPair(bandIdA, bandIdB, defaultColor))
 
 		// Message reports match A and C
 		abortMsg := messaging.AbortMessage{BarmbandId: bandIdC}
@@ -262,6 +263,7 @@ func TestBandCommand_HandleRequestPartnerMessage(t *testing.T) {
 					{
 						First:  bandIdA,
 						Second: bandIdB,
+						Color:  defaultColor,
 					},
 				}
 
@@ -398,7 +400,7 @@ func TestDefaultBandCommand_hasMatch(t *testing.T) {
 		t.Fatalf("pairFoundCallback should not be called")
 	})
 
-	bc.pairs = append(bc.pairs, barmband.NewPair(bandIdA, bandIdB))
+	bc.pairs = append(bc.pairs, barmband.NewPair(bandIdA, bandIdB, defaultColor))
 
 	assert.True(t, bc.hasMatch(bandIdA))
 	assert.True(t, bc.hasMatch(bandIdB))
@@ -437,4 +439,33 @@ func TestDefaultBandCommand_findPartnerFor(t *testing.T) {
 
 	assert.Equal(t, bandIdA, *bc.findPartnerFor(bandIdB))
 	assert.Nil(t, bc.findPartnerFor(bandIdA))
+}
+
+func TestGetUsedColors(t *testing.T) {
+	bc := &DefaultBandCommand{
+		pairs: []barmband.Pair{
+			{Color: "red"},
+			{Color: "blue"},
+			{Color: "green"},
+		},
+	}
+
+	expected := []string{"red", "blue", "green"}
+	actual := bc.GetUsedColors()
+
+	assert.Equal(t, expected, actual)
+}
+
+func TestGetRandomColor(t *testing.T) {
+	bc := &DefaultBandCommand{
+		pairs: []barmband.Pair{
+			{Color: "red"},
+			{Color: "blue"},
+			{Color: "green"},
+		},
+	}
+
+	color, err := bc.GetRandomColor()
+	assert.Nil(t, err)
+	assert.NotContains(t, bc.GetUsedColors(), color)
 }
