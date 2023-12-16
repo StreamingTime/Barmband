@@ -17,7 +17,7 @@ TimerHandle_t wifiReconnectTimer;
 
 String ownID = "63D592A9";
 String partnerID = "";
-String color = "";
+uint32_t color = 0;
 
 barmband::state::bandState currentState = barmband::state::startup;
 
