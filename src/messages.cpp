@@ -8,6 +8,10 @@ NewPairMessage parseNewPairMessage(String message) {
     NewPairMessage msg;
     msg.isOk = false;
 
+    if (message.length() != 26) {
+        return msg;
+    }
+
     char bandACstr[9];
     char bandBCstr[9];
 
@@ -31,6 +35,10 @@ AbortMessage parseAbortMessage(String message) {
     AbortMessage msg;
     msg.isOk = false;
 
+    if (message.length() != 14) {
+        return msg;
+    }
+
     char bandCstr[9];
 
     size_t n = sscanf(message.c_str(), "Abort %s", bandCstr);
@@ -48,6 +56,10 @@ PairFoundMessage parsePairFoundMessage(String message) {
 
     PairFoundMessage msg;
     msg.isOk = false;
+
+    if (message.length() != 28) {
+        return msg;
+    }
 
     char bandACstr[9];
     char bandBCstr[9];
