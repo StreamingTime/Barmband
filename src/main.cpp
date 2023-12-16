@@ -21,10 +21,11 @@ String partnerID = "";
 barmband::state::bandState currentState = barmband::state::startup;
 
 int buttonLastState = HIGH;
-int buttonCurrentState;      // the previous state from the input pin
-bool buttonPressed = false;  // prevent button event from being triggered twice
-                             // (on press & on release)
+int buttonCurrentState;  // the previous state from the input pin
 
+// button debouncing
+const unsigned long MIN_DEBOUNCE_TIME = 1500;  // in millis
+unsigned long buttonLastActivationTime;
 Rdm6300 rdm6300;
 
 // packet id of the last registration message sent
@@ -129,8 +130,9 @@ void onMqttMessage(char *topic, char *payload,
 
 void onMqttPublish(uint16_t packetId) {
   if (packetId == registrationPacketId) {
-    Serial.println("registration message send");
+    Serial.println("registration message sent");
     registrationPacketId = 0;
+    currentState = barmband::state::idle;
   }
 }
 
@@ -196,7 +198,10 @@ void loop() {
 
   buttonCurrentState = digitalRead(BUTTON_PIN);
 
-  if (buttonLastState == LOW && buttonCurrentState == HIGH && !buttonPressed) {
+  if (buttonLastState == LOW && buttonCurrentState == HIGH &&
+      millis() - buttonLastActivationTime > MIN_DEBOUNCE_TIME) {
+    buttonLastActivationTime = millis();
+    Serial.println("Button input detected");
     switch (currentState) {
         // Request pardner 🤠
       case (barmband::state::idle):
@@ -204,7 +209,7 @@ void loop() {
         sprintf(messageIdle, "Request partner %s", ownID);
         Serial.println(messageIdle);
         mqttClient.publish("barmband/challenge", 1, true, messageIdle);
-        buttonPressed = true;
+        setState(barmband::state::waiting);
         break;
 
       // Abort when waiting or paired
@@ -214,7 +219,7 @@ void loop() {
         sprintf(messageAbort, "Abort %s", ownID);
         Serial.println(messageAbort);
         mqttClient.publish("barmband/challenge", 1, true, messageAbort);
-        buttonPressed = true;
+        setState(barmband::state::idle);
         break;
     }
   }
