@@ -17,6 +17,7 @@ TimerHandle_t wifiReconnectTimer;
 
 String ownID = "63D592A9";
 String partnerID = "";
+String color = "";
 
 barmband::state::bandState currentState = barmband::state::startup;
 
@@ -90,9 +91,11 @@ void onMqttMessage(char *topic, char *payload,
         if (newPairMessage.firstBandId == ownID) {
           Serial.println("It's for me!");
           partnerID = newPairMessage.secondBandId;
+          color = newPairMessage.color;
         } else if (newPairMessage.secondBandId == ownID) {
           Serial.println("It's for me!");
           partnerID = newPairMessage.firstBandId;
+          color = newPairMessage.color;
         }
         Serial.printf("New partner: %s\n", partnerID);
         setState(barmband::state::paired);
@@ -190,7 +193,7 @@ void setup() {
 
 void loop() {
   // todo: blink/wa
-  handleLED(currentState);
+  handleLED(currentState, color);
 
   byte id = rdm6300.get_tag_id();
 
