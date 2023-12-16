@@ -14,7 +14,7 @@ NewPairMessage parseNewPairMessage(String message) {
 
     char bandACstr[9];
     char bandBCstr[9];
-    char color[9];
+    char color[7];
 
     size_t n = sscanf(message.c_str(), "New pair %s %s", bandACstr, bandBCstr, color);
 
