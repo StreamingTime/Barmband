@@ -1,31 +1,29 @@
 #include <AsyncMqttClient.h>
-#include <FastLED.h>
 #include <WiFi.h>
 #include <rdm6300.h>
-#include "messages.h"
+
 #include "Arduino.h"
 #include "config.h"
+#include "ledController.hpp"
+#include "messages.h"
 #include "state.h"
 
 AsyncMqttClient mqttClient;
 TimerHandle_t mqttReconnectTimer;
 TimerHandle_t wifiReconnectTimer;
 
-#define LED_PIN 12
 #define RDM6300_RX_PIN 5
-
-// #define NUM_LEDS 11
-#define NUM_LEDS 8
-#define BRIGHTNESS 64
-#define LED_TYPE WS2812
-CRGB leds[NUM_LEDS];
-
-#define UPDATES_PER_SECOND 100
+#define BUTTON_PIN 4
 
 String ownID = "63D592A9";
 String partnerID = "";
 
 barmband::state::bandState currentState = barmband::state::startup;
+
+int buttonLastState = HIGH;
+int buttonCurrentState;      // the previous state from the input pin
+bool buttonPressed = false;  // prevent button event from being triggered twice
+                             // (on press & on release)
 
 Rdm6300 rdm6300;
 
@@ -83,7 +81,7 @@ void onMqttMessage(char *topic, char *payload,
 
   if (strcmp(topic, MQTT_CHALLENGE_TOPIC) == 0) {
     Serial.println(msg);
-    
+
     auto newPairMessage = barmband::messages::parseNewPairMessage(msg);
     if (newPairMessage.isOk) {
       Serial.println("got new pair message");
@@ -99,7 +97,6 @@ void onMqttMessage(char *topic, char *payload,
         Serial.printf("New partner: %s\n", partnerID);
         setState(barmband::state::paired);
       }
-      
     }
 
     // TODO: don't run other parsers when one succeeds
@@ -107,7 +104,8 @@ void onMqttMessage(char *topic, char *payload,
     if (abortMessage.isOk) {
       Serial.println("got abort message");
 
-      if (currentState == barmband::state::paired && abortMessage.bandId == partnerID) {
+      if (currentState == barmband::state::paired &&
+          abortMessage.bandId == partnerID) {
         // TODO: notify user
         Serial.println("partner aborted challenge");
         setState(barmband::state::idle);
@@ -118,7 +116,9 @@ void onMqttMessage(char *topic, char *payload,
     if (pairFoundMessage.isOk) {
       Serial.println("got pair found message");
 
-      if (currentState == barmband::state::paired && pairFoundMessage.firstBandId == ownID || pairFoundMessage.secondBandId == ownID ) {
+      if (currentState == barmband::state::paired &&
+              pairFoundMessage.firstBandId == ownID ||
+          pairFoundMessage.secondBandId == ownID) {
         // TODO: notify user
         Serial.println("partner found me");
         setState(barmband::state::idle);
@@ -179,29 +179,34 @@ void setup() {
   connectToWifi();
 
   init();
-
-  FastLED.addLeds<WS2812, LED_PIN, RGB>(leds,
-                                        NUM_LEDS);  // GRB ordering is typical
-  FastLED.setBrightness(BRIGHTNESS);
+  initLED();
 
   rdm6300.begin(RDM6300_RX_PIN);
 
   Serial.println("\nrdm6300 started...\n");
+
+  pinMode(BUTTON_PIN, INPUT_PULLDOWN);
 }
 
 void loop() {
   // todo: blink/wa
+  handleLED(currentState);
 
   byte id = rdm6300.get_tag_id();
 
-  if (id != 0) {
-    Serial.println(id);
+  buttonCurrentState = digitalRead(BUTTON_PIN);
 
-  } else {
-    // solid color
-    for (int i = 0; i < NUM_LEDS; i++) {
-      leds[i] = CRGB::Cyan;
+  // Request pardner 🤠
+  if (buttonLastState == LOW && buttonCurrentState == HIGH && !buttonPressed) {
+    switch (currentState) {
+      case (barmband::state::idle):
+        char message[25];
+        sprintf(message, "Request partner %s", ownID);
+        Serial.println(message);
+        mqttClient.publish("barmband/challenge", 1, true, message);
+        buttonPressed = true;
+        break;
     }
   }
-  FastLED.show();
+  buttonLastState = buttonCurrentState;
 }
