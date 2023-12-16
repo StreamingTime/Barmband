@@ -14,9 +14,9 @@ NewPairMessage parseNewPairMessage(String message) {
 
     char bandACstr[9];
     char bandBCstr[9];
-    char color[7];
+    char colorCstr[7];
 
-    size_t n = sscanf(message.c_str(), "New pair %s %s", bandACstr, bandBCstr, color);
+    size_t n = sscanf(message.c_str(), "New pair %s %s", bandACstr, bandBCstr, colorCstr);
 
     if (n != 2) {
         return msg;
@@ -24,7 +24,7 @@ NewPairMessage parseNewPairMessage(String message) {
 
     msg.firstBandId = String(bandACstr);
     msg.secondBandId = String(bandBCstr);
-    msg.color = String(color);
+    msg.color = String(colorCstr);
     msg.isOk = true;
 
     Serial.println(msg.firstBandId);
