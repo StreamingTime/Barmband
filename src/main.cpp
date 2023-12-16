@@ -21,10 +21,10 @@ String partnerID = "";
 barmband::state::bandState currentState = barmband::state::startup;
 
 int buttonLastState = HIGH;
-int buttonCurrentState;      // the previous state from the input pin
+int buttonCurrentState;  // the previous state from the input pin
 
 // button debouncing
-const unsigned long MIN_DEBOUNCE_TIME = 1500; // in millis
+const unsigned long MIN_DEBOUNCE_TIME = 1500;  // in millis
 unsigned long buttonLastActivationTime;
 Rdm6300 rdm6300;
 
@@ -198,7 +198,8 @@ void loop() {
 
   buttonCurrentState = digitalRead(BUTTON_PIN);
 
-  if (buttonLastState == LOW && buttonCurrentState == HIGH && millis() - buttonLastActivationTime > MIN_DEBOUNCE_TIME) {
+  if (buttonLastState == LOW && buttonCurrentState == HIGH &&
+      millis() - buttonLastActivationTime > MIN_DEBOUNCE_TIME) {
     buttonLastActivationTime = millis();
     Serial.println("Button input detected");
     switch (currentState) {
