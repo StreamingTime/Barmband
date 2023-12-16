@@ -53,7 +53,7 @@ void onMqttConnect(bool sessionPresent) {
   char message[16];
   sprintf(message, "Hello %s", ownID);
   Serial.println(message);
-  registrationPacketId =  mqttClient.publish(MQTT_SETUP_TOPIC, 1, true, message);
+  registrationPacketId = mqttClient.publish(MQTT_SETUP_TOPIC, 1, true, message);
 }
 
 void onMqttDisconnect(AsyncMqttClientDisconnectReason reason) {
@@ -196,14 +196,24 @@ void loop() {
 
   buttonCurrentState = digitalRead(BUTTON_PIN);
 
-  // Request pardner 🤠
   if (buttonLastState == LOW && buttonCurrentState == HIGH && !buttonPressed) {
     switch (currentState) {
+        // Request pardner 🤠
       case (barmband::state::idle):
-        char message[25];
-        sprintf(message, "Request partner %s", ownID);
-        Serial.println(message);
-        mqttClient.publish("barmband/challenge", 1, true, message);
+        char messageIdle[25];
+        sprintf(messageIdle, "Request partner %s", ownID);
+        Serial.println(messageIdle);
+        mqttClient.publish("barmband/challenge", 1, true, messageIdle);
+        buttonPressed = true;
+        break;
+
+      // Abort when waiting or paired
+      case (barmband::state::paired):
+      case (barmband::state::waiting):
+        char messageAbort[15];
+        sprintf(messageAbort, "Abort %s", ownID);
+        Serial.println(messageAbort);
+        mqttClient.publish("barmband/challenge", 1, true, messageAbort);
         buttonPressed = true;
         break;
     }
