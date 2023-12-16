@@ -16,7 +16,7 @@ NewPairMessage parseNewPairMessage(String message) {
     char bandBCstr[9];
     uint32_t colorCstr;
 
-    size_t n = sscanf(message.c_str(), "New pair %s %x", bandACstr, bandBCstr, &colorCstr);
+    size_t n = sscanf(message.c_str(), "New pair %s %s %x", bandACstr, bandBCstr, &colorCstr);
 
     if (n != 3) {
         return msg;
