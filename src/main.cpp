@@ -170,16 +170,17 @@ void WiFiEvent(WiFiEvent_t event) {
 }
 
 void scanNewId() {
-  while (rdm6300.get_new_tag_id() == 0) {
+  uint32_t tagID = 0;
+
+  while (tagID == 0) {
     Serial.println("Waiting for RFID tag...");
+    tagID = rdm6300.get_new_tag_id();
     delay(1000);
   }
-  if (rdm6300.get_new_tag_id() != 0) {
-    uint32_t tagID = rdm6300.get_new_tag_id();
-    char newID[9];
-    sprintf(newID, "%08X", tagID);
-    preferences.putString("ownID", newID);
-  }
+
+  char newID[9];
+  sprintf(newID, "%08X", tagID);
+  preferences.putString("ownID", newID);
 }
 
 void connectToWifi() { WiFi.begin(WIFI_SSID, WIFI_PASSWORD); }
