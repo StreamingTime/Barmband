@@ -59,7 +59,7 @@ void onMqttConnect(bool sessionPresent) {
   char message[16];
   sprintf(message, "Hello %s", ownID);
   Serial.println(message);
-  registrationPacketId = mqttClient.publish(MQTT_SETUP_TOPIC, 1, true, message);
+  registrationPacketId = mqttClient.publish(MQTT_SETUP_TOPIC, MQTT_QOS, true, message);
 
   barmband::log::setLoggingMqttclient(&mqttClient);
 }
@@ -260,7 +260,7 @@ void loop() {
         char messageIdle[25];
         sprintf(messageIdle, "Request partner %s", ownID);
         Serial.println(messageIdle);
-        mqttClient.publish(MQTT_CHALLENGE_TOPIC, 1, true, messageIdle);
+        mqttClient.publish(MQTT_CHALLENGE_TOPIC, MQTT_QOS, true, messageIdle);
         setState(barmband::state::waiting);
         break;
 
@@ -270,7 +270,7 @@ void loop() {
         char messageAbort[15];
         sprintf(messageAbort, "Abort %s", ownID);
         Serial.println(messageAbort);
-        mqttClient.publish(MQTT_CHALLENGE_TOPIC, 1, true, messageAbort);
+        mqttClient.publish(MQTT_CHALLENGE_TOPIC, MQTT_QOS, true, messageAbort);
         setState(barmband::state::idle);
         break;
     }

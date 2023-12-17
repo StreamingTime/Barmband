@@ -23,6 +23,8 @@ const ChallengeTopic = "barmband/challenge"
 
 const SetupTopic = "barmband/setup"
 
+const MqttQos = 2
+
 func makeConnectionString(host string, port string) string {
 	return fmt.Sprintf("tcp://%s:%s", host, port)
 }
@@ -56,7 +58,7 @@ func main() {
 		firstS := barmband.IdToString(pair.First)
 		secondS := barmband.IdToString(pair.Second)
 
-		client.Publish(ChallengeTopic, 0, false, fmt.Sprintf("New pair %s %s %s", firstS, secondS, pair.Color))
+		client.Publish(ChallengeTopic, MqttQos, false, fmt.Sprintf("New pair %s %s %s", firstS, secondS, pair.Color))
 	})
 
 	messageHandler := mqttMessageHandler(bc)
