@@ -53,8 +53,8 @@ func main() {
 	}
 
 	bc := bandcommand.New(func(pair barmband.Pair) {
-		firstS := fmt.Sprintf("%X", pair.First)
-		secondS := fmt.Sprintf("%X", pair.Second)
+		firstS := barmband.IdToString(pair.First)
+		secondS := barmband.IdToString(pair.Second)
 
 		client.Publish(ChallengeTopic, 0, false, fmt.Sprintf("New pair %s %s %s", firstS, secondS, pair.Color))
 	})

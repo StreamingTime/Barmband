@@ -170,16 +170,21 @@ void WiFiEvent(WiFiEvent_t event) {
 }
 
 void scanNewId() {
-  while (rdm6300.get_tag_id() == 0) {
+  while (rdm6300.get_new_tag_id() == 0) {
     Serial.println("Waiting for RFID tag...");
     delay(1000);
   }
   if (rdm6300.get_tag_id() != 0) {
-    ownID = String(rdm6300.get_tag_id());
+    uint32_t tagID = rdm6300.get_tag_id();
+    Serial.println("tag id -------------------------------");
+    Serial.println(tagID);
+    char newID[9];
+    sprintf(newID, "%08X", tagID);
+    Serial.println("new id -------------------------------");
+    Serial.println(newID);
   }
   preferences.putString("ownID", ownID);
   Serial.println("Saved new RFID tag ID: " + ownID);
-  Serial.println("Restarting...");
 }
 
 void connectToWifi() { WiFi.begin(WIFI_SSID, WIFI_PASSWORD); }
@@ -234,13 +239,21 @@ void setup() {
 
 void loop() {
   // todo: blink/wa
-  byte id = rdm6300.get_tag_id();
   buttonCurrentState = digitalRead(BUTTON_PIN);
 
   handleLED(currentState, color);
 
+  uint32_t id = rdm6300.get_new_tag_id();
+
+  buttonCurrentState = digitalRead(BUTTON_PIN);
   if (id != 0) {
-    barmband::log::logf(ownID, "Scanned tag: %X", id);
+    String idStr = String(id);
+    barmband::log::logf(ownID, "Scanned tag: %08X", idStr);
+    if (currentState == barmband::state::paired) {
+      char message[29];
+      sprintf(message, "Pair found %s %08X", ownID, idStr);
+      mqttClient.publish(MQTT_CHALLENGE_TOPIC, 1, true, message);
+    }
   }
   if (buttonLastState == LOW && buttonCurrentState == HIGH &&
       millis() - buttonLastActivationTime > MIN_DEBOUNCE_TIME) {
@@ -252,7 +265,7 @@ void loop() {
         char messageIdle[25];
         sprintf(messageIdle, "Request partner %s", ownID);
         Serial.println(messageIdle);
-        mqttClient.publish("barmband/challenge", 1, true, messageIdle);
+        mqttClient.publish(MQTT_CHALLENGE_TOPIC, 1, true, messageIdle);
         setState(barmband::state::waiting);
         break;
 
@@ -262,7 +275,7 @@ void loop() {
         char messageAbort[15];
         sprintf(messageAbort, "Abort %s", ownID);
         Serial.println(messageAbort);
-        mqttClient.publish("barmband/challenge", 1, true, messageAbort);
+        mqttClient.publish(MQTT_CHALLENGE_TOPIC, 1, true, messageAbort);
         setState(barmband::state::idle);
         break;
     }
