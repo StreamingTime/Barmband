@@ -5,7 +5,7 @@
 
 #include "Arduino.h"
 #include "config.h"
-#include "ledController.hpp"
+#include "ledController.h"
 #include "logging.h"
 #include "messages.h"
 #include "state.h"
