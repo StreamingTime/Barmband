@@ -1,5 +1,5 @@
 #include <AsyncMqttClient.h>
-#include <EEPROM.h>
+#include <Preferences.h>
 #include <WiFi.h>
 #include <rdm6300.h>
 
@@ -20,6 +20,8 @@ String ownID = "";
 // String ownID = "63D592A9";
 String partnerID = "";
 uint32_t color = 0;
+
+Preferences preferences;
 
 barmband::state::bandState currentState = barmband::state::startup;
 
@@ -203,28 +205,35 @@ void setup() {
 
   buttonCurrentState = digitalRead(BUTTON_PIN);
 
-  EEPROM.get(0, ownID);
+  preferences.begin("my-app", false);
+
+  ownID = preferences.getString("ownID", "");
 
   if (ownID != "") {
-    // ownID found in EEPROM
-    Serial.println("Own ID found in EEPROM: " + ownID);
+    if (buttonCurrentState == HIGH) {
+      Serial.println("ENTERING NEW ID SETUP MODE");
+      while (rdm6300.get_tag_id() == 0) {
+        Serial.println("Waiting for RFID tag...");
+        delay(1000);
+      }
+      if (rdm6300.get_tag_id() != 0) {
+        ownID = String(rdm6300.get_tag_id());
+      }
+      preferences.putString("ownID", ownID);
+      Serial.println("Saved new RFID tag ID: " + ownID);
+    }
+    Serial.println("Own ID found in preferences: " + ownID);
   } else {
-    // ownID not found, scan RFID tag
     Serial.println("Scan RFID tag...");
 
-    // You can use rdm6300.readTag() in your implementation to detect RFID tag
     while (rdm6300.get_tag_id() == 0) {
-      // Waiting for RFID tag
       Serial.println("Waiting for RFID tag...");
+      delay(1000);
     }
 
-    // RFID tag detected, get the tag ID
-    String ownID = String(rdm6300.get_tag_id());
-    Serial.println("RFID tag ID: " + ownID);
-
-    // Save the tag ID to EEPROM
-    EEPROM.put(0, ownID);
-    Serial.println("RFID tag ID saved to EEPROM");
+    ownID = String(rdm6300.get_tag_id());
+    preferences.putString("ownID", ownID);
+    Serial.println("Saved RFID tag ID: " + ownID);
   }
 
   setState(barmband::state::startup);
