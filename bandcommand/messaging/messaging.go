@@ -9,6 +9,7 @@ import (
 )
 
 type Message interface {
+	String() string
 }
 
 type SetupMessage struct {
@@ -26,6 +27,23 @@ type AbortMessage struct {
 
 type RequestPartnerMessage struct {
 	BarmbandId barmband.BarmbandId
+}
+
+func (m SetupMessage) String() string {
+	return fmt.Sprintf("SetupMessage{ BarmbandId: %s }", barmband.IdToString(m.BarmbandId))
+}
+
+func (m PairFoundMessage) String() string {
+	return fmt.Sprintf("PairFoundMessage{ FirstBarmbandId: %s, SecondBarmbandId: %s }",
+		barmband.IdToString(m.FirstBarmbandId), barmband.IdToString(m.SecondBarmbandId))
+}
+
+func (m AbortMessage) String() string {
+	return fmt.Sprintf("AbortMessage{ BarmbandId: %s }", barmband.IdToString(m.BarmbandId))
+}
+
+func (m RequestPartnerMessage) String() string {
+	return fmt.Sprintf("RequestPartnerMessage{ BarmbandId: %s }", barmband.IdToString(m.BarmbandId))
 }
 
 type messageParser func(string) (Message, error)

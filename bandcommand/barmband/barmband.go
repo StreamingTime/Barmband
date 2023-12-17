@@ -25,9 +25,8 @@ func IdFromString(s string) (BarmbandId, error) {
 		num, _ := strconv.ParseUint(s[i:i+2], 16, 8)
 		bytes = append(bytes, byte(num))
 	}
-	fmt.Printf("%X\n", bytes)
-	return BarmbandId(bytes), nil
 
+	return BarmbandId(bytes), nil
 }
 
 type Barmband struct {

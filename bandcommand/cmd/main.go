@@ -82,14 +82,13 @@ func main() {
 func mqttMessageHandler(bc bandcommand.BandCommand) func(client mqtt.Client, message mqtt.Message) {
 
 	return func(client mqtt.Client, message mqtt.Message) {
-		fmt.Println(message)
 		messageString := string(message.Payload())
 		msg, err := messaging.ParseMessage(messageString)
 
 		if err != nil {
 			log.Printf("Failed to parse message '%s': %s\n", messageString, err)
 		} else {
-			fmt.Printf("Got message: %v\n", msg)
+			log.Printf("Got message: %v in topic %v\n", msg.String(), message.Topic())
 			bc.HandleMessage(msg)
 		}
 	}
