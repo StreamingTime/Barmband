@@ -8,7 +8,7 @@ import (
 
 type BarmbandId = [4]byte
 
-var InvalidLengthError = errors.New("barmband id has invalid length")
+var ErrInvalidLength = errors.New("barmband id has invalid length")
 
 func IdToString(id BarmbandId) string {
 	return fmt.Sprintf("%X", id)
@@ -17,7 +17,7 @@ func IdToString(id BarmbandId) string {
 // IdFromString converts  the string "12345678" to the BarmbandId []byte{0x12, 0x34, 0x56, 0x78}
 func IdFromString(s string) (BarmbandId, error) {
 	if len(s) != 8 {
-		return BarmbandId{}, InvalidLengthError
+		return BarmbandId{}, ErrInvalidLength
 	}
 
 	bytes := make([]byte, 0, len(s)/2)
@@ -25,9 +25,8 @@ func IdFromString(s string) (BarmbandId, error) {
 		num, _ := strconv.ParseUint(s[i:i+2], 16, 8)
 		bytes = append(bytes, byte(num))
 	}
-	fmt.Printf("%X\n", bytes)
-	return BarmbandId(bytes), nil
 
+	return BarmbandId(bytes), nil
 }
 
 type Barmband struct {
