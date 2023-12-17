@@ -22,8 +22,6 @@ uint32_t color = 0;
 
 barmband::state::bandState currentState = barmband::state::startup;
 
-std::string uint8_to_hex_string(const uint8_t *v, const size_t s);
-
 int buttonLastState = HIGH;
 int buttonCurrentState;  // the previous state from the input pin
 
