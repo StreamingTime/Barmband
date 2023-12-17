@@ -82,6 +82,15 @@ go run ./cmd
 ```
 to start bandcommand directly.
 
+=== Tests
+
+To generate the mocks used in some of the tests, https://github.com/uber-go/mock[mockgen] is required.
+
+```shell
+go generate _mocks/gen.go
+go test ./... -v
+```
+
 == MQTT Broker
 
 We use MQTT to send messages between the Barmbands and Bandcommand, which requires an MQTT Broker.
