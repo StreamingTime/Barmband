@@ -35,18 +35,20 @@ Recommended, but not needed
 |==================================
 | Device pin          | ESP32 board pin
 | **Tag reader (RDM3600)** |            
-|          TODO        |     
+|          5V        |     5V
+| GND | GND
+| TX | 5
       
 | **LED (WS2812)**          |            
-| 5V                     | 5V        
+| 5V                     | 5V   
 | GND | GND
 | Din |                   12   
 | ** Button **        |
-|         TODO            | TODO
-|           TODO          | TODO        
+|                     | 4
+|                     | GND        
 |==================================
 
-TODO: schema
+image::schema.drawio.png[]
 
 === Flashing the software
 
