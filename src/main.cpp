@@ -210,11 +210,10 @@ void loop() {
 
   buttonCurrentState = digitalRead(BUTTON_PIN);
   if (id != 0) {
-    String idStr = String(id);
-    barmband::log::logf(ownID, "Scanned tag: %08X", idStr);
+    barmband::log::logf(ownID, "Scanned tag: %08X", id);
     if (currentState == barmband::state::paired) {
       char message[29];
-      sprintf(message, "Pair found %s %08X", ownID, idStr);
+      sprintf(message, "Pair found %s %08X", ownID, id);
       mqttClient.publish(MQTT_CHALLENGE_TOPIC, 1, true, message);
     }
   }
