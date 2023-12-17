@@ -134,8 +134,8 @@ void onMqttMessage(char *topic, char *payload,
     }
 
     if (!newPairMessage.isOk && !abortMessage.isOk && !pairFoundMessage.isOk) {
-      barmband::log::logf(ownID, "Unknown message '%s' in topic %s\n", msg.c_str(),
-                          topic);
+      barmband::log::logf(ownID, "Unknown message '%s' in topic %s\n",
+                          msg.c_str(), topic);
     }
   }
 }
@@ -171,7 +171,6 @@ void connectToWifi() { WiFi.begin(WIFI_SSID, WIFI_PASSWORD); }
 
 void setup() {
   Serial.begin(9600);
-  setState(barmband::state::startup);
 
   mqttReconnectTimer =
       xTimerCreate("mqttTimer", pdMS_TO_TICKS(2000), pdFALSE, (void *)0,
@@ -200,41 +199,64 @@ void setup() {
   Serial.println("\nrdm6300 started...\n");
 
   pinMode(BUTTON_PIN, INPUT_PULLDOWN);
+
+  buttonCurrentState = digitalRead(BUTTON_PIN);
+
+  if (buttonCurrentState == HIGH) {
+    Serial.println("ENTERING ID SETUP MODE");
+    Serial.println("Please scan your own tag.");
+    Serial.println(
+        "When scanned, press the button again to finish the setup process.");
+    setState(barmband::state::registerId);
+    buttonLastState = buttonCurrentState;
+  } else {
+    setState(barmband::state::startup);
+  }
 }
 
 void loop() {
   // todo: blink/wa
-  handleLED(currentState, color);
-
   byte id = rdm6300.get_tag_id();
-
   buttonCurrentState = digitalRead(BUTTON_PIN);
-  if (id != 0) {
-    barmband::log::logf(ownID, "Scanned tag: %X", id);
-  }
-  if (buttonLastState == LOW && buttonCurrentState == HIGH &&
-      millis() - buttonLastActivationTime > MIN_DEBOUNCE_TIME) {
-    buttonLastActivationTime = millis();
-    barmband::log::logln(ownID, "Button input detected");
-    switch (currentState) {
-        // Request pardner 🤠
-      case (barmband::state::idle):
-        char messageIdle[25];
-        sprintf(messageIdle, "Request partner %s", ownID);
-        Serial.println(messageIdle);
-        mqttClient.publish("barmband/challenge", 1, true, messageIdle);
-        setState(barmband::state::waiting);
-        break;
 
-      // Abort when waiting or paired
-      case (barmband::state::paired):
-      case (barmband::state::waiting):
-        char messageAbort[15];
-        sprintf(messageAbort, "Abort %s", ownID);
-        Serial.println(messageAbort);
-        mqttClient.publish("barmband/challenge", 1, true, messageAbort);
-        setState(barmband::state::idle);
-        break;
+  if (barmband::state::registerId) {
+    if (id != 0) {
+      ownID = id;
+    }
+    if (buttonLastState == LOW && buttonCurrentState == HIGH) {
+      Serial.println("exiting ID setup mode.");
+      setState(barmband::state::startup);
+    }
+  } else {
+    handleLED(currentState, color);
+
+    if (id != 0) {
+      barmband::log::logf(ownID, "Scanned tag: %X", id);
+    }
+    if (buttonLastState == LOW && buttonCurrentState == HIGH &&
+        millis() - buttonLastActivationTime > MIN_DEBOUNCE_TIME) {
+      buttonLastActivationTime = millis();
+      barmband::log::logln(ownID, "Button input detected");
+      switch (currentState) {
+          // Request pardner 🤠
+        case (barmband::state::idle):
+          char messageIdle[25];
+          sprintf(messageIdle, "Request partner %s", ownID);
+          Serial.println(messageIdle);
+          mqttClient.publish("barmband/challenge", 1, true, messageIdle);
+          setState(barmband::state::waiting);
+          break;
+
+        // Abort when waiting or paired
+        case (barmband::state::paired):
+        case (barmband::state::waiting):
+          char messageAbort[15];
+          sprintf(messageAbort, "Abort %s", ownID);
+          Serial.println(messageAbort);
+          mqttClient.publish("barmband/challenge", 1, true, messageAbort);
+          setState(barmband::state::idle);
+          break;
+      }
     }
   }
   buttonLastState = buttonCurrentState;

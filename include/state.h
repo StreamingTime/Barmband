@@ -6,6 +6,7 @@ enum bandState {
   idle,
   waiting,
   paired,
+  registerId,
 };
 
 const char* bandStateNames[] {
@@ -13,5 +14,6 @@ const char* bandStateNames[] {
   "IDLE",
   "WAITING",
   "PAIRED",
+  "REGISTERID",
 };
 }
