@@ -219,11 +219,11 @@ void setup() {
     }
 
     // RFID tag detected, get the tag ID
-    String tagID = String(rdm6300.get_tag_id());
-    Serial.println("RFID tag ID: " + tagID);
+    String ownID = String(rdm6300.get_tag_id());
+    Serial.println("RFID tag ID: " + ownID);
 
     // Save the tag ID to EEPROM
-    EEPROM.put(0, tagID);
+    EEPROM.put(0, ownID);
     Serial.println("RFID tag ID saved to EEPROM");
   }
 
