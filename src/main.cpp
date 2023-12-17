@@ -215,7 +215,7 @@ void loop() {
     if (currentState == barmband::state::paired) {
       char message[29];
       sprintf(message, "Pair found %s %08X", ownID, idStr);
-      mqttClient.publish("barmband/challenge", 1, true, message);
+      mqttClient.publish(MQTT_CHALLENGE_TOPIC, 1, true, message);
     }
   }
   if (buttonLastState == LOW && buttonCurrentState == HIGH &&
@@ -228,7 +228,7 @@ void loop() {
         char messageIdle[25];
         sprintf(messageIdle, "Request partner %s", ownID);
         Serial.println(messageIdle);
-        mqttClient.publish("barmband/challenge", 1, true, messageIdle);
+        mqttClient.publish(MQTT_CHALLENGE_TOPIC, 1, true, messageIdle);
         setState(barmband::state::waiting);
         break;
 
@@ -238,7 +238,7 @@ void loop() {
         char messageAbort[15];
         sprintf(messageAbort, "Abort %s", ownID);
         Serial.println(messageAbort);
-        mqttClient.publish("barmband/challenge", 1, true, messageAbort);
+        mqttClient.publish(MQTT_CHALLENGE_TOPIC, 1, true, messageAbort);
         setState(barmband::state::idle);
         break;
     }
