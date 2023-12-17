@@ -174,17 +174,12 @@ void scanNewId() {
     Serial.println("Waiting for RFID tag...");
     delay(1000);
   }
-  if (rdm6300.get_tag_id() != 0) {
-    uint32_t tagID = rdm6300.get_tag_id();
-    Serial.println("tag id -------------------------------");
-    Serial.println(tagID);
+  if (rdm6300.get_new_tag_id() != 0) {
+    uint32_t tagID = rdm6300.get_new_tag_id();
     char newID[9];
     sprintf(newID, "%08X", tagID);
-    Serial.println("new id -------------------------------");
-    Serial.println(newID);
+    preferences.putString("ownID", newID);
   }
-  preferences.putString("ownID", ownID);
-  Serial.println("Saved new RFID tag ID: " + ownID);
 }
 
 void connectToWifi() { WiFi.begin(WIFI_SSID, WIFI_PASSWORD); }
@@ -222,7 +217,7 @@ void setup() {
 
   buttonCurrentState = digitalRead(BUTTON_PIN);
 
-  preferences.begin("my-app", false);
+  preferences.begin("barmband", false);
 
   ownID = preferences.getString("ownID", "");
 
