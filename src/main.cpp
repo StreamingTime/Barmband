@@ -170,6 +170,20 @@ void WiFiEvent(WiFiEvent_t event) {
   }
 }
 
+void scanNewId() {
+  while (rdm6300.get_tag_id() == 0) {
+    Serial.println("Waiting for RFID tag...");
+    delay(1000);
+  }
+  if (rdm6300.get_tag_id() != 0) {
+    ownID = String(rdm6300.get_tag_id());
+  }
+  preferences.putString("ownID", ownID);
+  Serial.println("Saved new RFID tag ID: " + ownID);
+  Serial.println("Restarting...");
+  ESP.restart();
+}
+
 void connectToWifi() { WiFi.begin(WIFI_SSID, WIFI_PASSWORD); }
 
 void setup() {
@@ -212,32 +226,14 @@ void setup() {
   if (ownID != "") {
     if (buttonCurrentState == HIGH) {
       Serial.println("ENTERING NEW ID SETUP MODE");
-      while (rdm6300.get_tag_id() == 0) {
-        Serial.println("Waiting for RFID tag...");
-        delay(1000);
-      }
-      if (rdm6300.get_tag_id() != 0) {
-        ownID = String(rdm6300.get_tag_id());
-      }
-      preferences.putString("ownID", ownID);
-      Serial.println("Saved new RFID tag ID: " + ownID);
-      Serial.println("Restarting...");
-      ESP.restart();
+      scanNewId();
     }
+
     Serial.println("Own ID found in preferences: " + ownID);
+
   } else {
-    Serial.println("Scan RFID tag...");
-
-    while (rdm6300.get_tag_id() == 0) {
-      Serial.println("Waiting for RFID tag...");
-      delay(1000);
-    }
-
-    ownID = String(rdm6300.get_tag_id());
-    preferences.putString("ownID", ownID);
-    Serial.println("Saved RFID tag ID: " + ownID);
-    Serial.println("Restarting...");
-    ESP.restart();
+    Serial.println("Scan new RFID tag...");
+    scanNewId();
   }
 
   setState(barmband::state::startup);
