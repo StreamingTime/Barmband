@@ -16,7 +16,7 @@ void logln(String id, const char* msg) {
   if (loggingMqttClient != nullptr) {
     char msgBuff[80];
     sprintf(msgBuff, "%s: %s", id.c_str(), msg);
-    loggingMqttClient->publish(MQTT_LOGGING_TOPIC, 2, true, msgBuff);
+    loggingMqttClient->publish(MQTT_LOGGING_TOPIC, MQTT_QOS, true, msgBuff);
   }
   #endif
 }
@@ -34,7 +34,7 @@ void logf(String id, const char* fmt, ...) {
   if (loggingMqttClient != nullptr) {
     char msgWithId[91];
     sprintf(msgWithId, "%s: %s", id.c_str(), msgBuff);
-    loggingMqttClient->publish(MQTT_LOGGING_TOPIC, 2, true, msgWithId);
+    loggingMqttClient->publish(MQTT_LOGGING_TOPIC, MQTT_QOS, true, msgWithId);
   }
   #endif
 }
