@@ -6,6 +6,7 @@ namespace barmband::messages {
 struct NewPairMessage {
   String firstBandId;
   String secondBandId;
+  uint32_t color;
   bool isOk;
 };
 

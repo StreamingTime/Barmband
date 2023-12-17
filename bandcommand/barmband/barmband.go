@@ -44,11 +44,13 @@ func NewBarmband(id BarmbandId) Barmband {
 type Pair struct {
 	First  BarmbandId
 	Second BarmbandId
+	Color  string
 }
 
-func NewPair(a BarmbandId, b BarmbandId) Pair {
+func NewPair(a BarmbandId, b BarmbandId, color string) Pair {
 	return Pair{
 		First:  a,
 		Second: b,
+		Color:  color,
 	}
 }
