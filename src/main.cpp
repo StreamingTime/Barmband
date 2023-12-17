@@ -1,4 +1,5 @@
 #include <AsyncMqttClient.h>
+#include <Preferences.h>
 #include <WiFi.h>
 #include <rdm6300.h>
 
@@ -15,10 +16,11 @@ TimerHandle_t wifiReconnectTimer;
 
 #define RDM6300_RX_PIN 5
 #define BUTTON_PIN 4
-
-String ownID = "63D592A9";
+String ownID = "";
 String partnerID = "";
 uint32_t color = 0;
+
+Preferences preferences;
 
 barmband::state::bandState currentState = barmband::state::startup;
 
@@ -167,11 +169,24 @@ void WiFiEvent(WiFiEvent_t event) {
   }
 }
 
+void scanNewId() {
+  uint32_t tagID = 0;
+
+  while (tagID == 0) {
+    Serial.println("Waiting for RFID tag...");
+    tagID = rdm6300.get_new_tag_id();
+    delay(1000);
+  }
+
+  char newID[9];
+  sprintf(newID, "%08X", tagID);
+  preferences.putString("ownID", newID);
+}
+
 void connectToWifi() { WiFi.begin(WIFI_SSID, WIFI_PASSWORD); }
 
 void setup() {
   Serial.begin(9600);
-  setState(barmband::state::startup);
 
   mqttReconnectTimer =
       xTimerCreate("mqttTimer", pdMS_TO_TICKS(2000), pdFALSE, (void *)0,
@@ -200,10 +215,28 @@ void setup() {
   Serial.println("\nrdm6300 started...\n");
 
   pinMode(BUTTON_PIN, INPUT_PULLDOWN);
+
+  buttonCurrentState = digitalRead(BUTTON_PIN);
+
+  preferences.begin("barmband", false);
+
+  ownID = preferences.getString("ownID", "");
+
+  if (ownID == "" || buttonCurrentState == HIGH) {
+    Serial.println("Scanning new tag ID");
+    scanNewId();
+    ESP.restart();
+  } else {
+    Serial.println("Own ID found in preferences: " + ownID);
+  }
+
+  setState(barmband::state::startup);
 }
 
 void loop() {
   // todo: blink/wa
+  buttonCurrentState = digitalRead(BUTTON_PIN);
+
   handleLED(currentState, color);
 
   uint32_t id = rdm6300.get_new_tag_id();
