@@ -5,6 +5,7 @@
 #include "Arduino.h"
 #include "config.h"
 #include "ledController.hpp"
+#include "logging.h"
 #include "messages.h"
 #include "state.h"
 
@@ -33,7 +34,8 @@ Rdm6300 rdm6300;
 uint16_t registrationPacketId = 0;
 
 void setState(barmband::state::bandState newState) {
-  Serial.printf("New state: %s\n", barmband::state::bandStateNames[newState]);
+  barmband::log::logf(ownID, "New state: %s\n",
+                      barmband::state::bandStateNames[newState]);
   currentState = newState;
 }
 
@@ -56,10 +58,12 @@ void onMqttConnect(bool sessionPresent) {
   sprintf(message, "Hello %s", ownID);
   Serial.println(message);
   registrationPacketId = mqttClient.publish(MQTT_SETUP_TOPIC, 1, true, message);
+
+  barmband::log::setLoggingMqttclient(&mqttClient);
 }
 
 void onMqttDisconnect(AsyncMqttClientDisconnectReason reason) {
-  Serial.printf("Disconnected from MQTT: %d\n", reason);
+  barmband::log::logf(ownID, "Disconnected from MQTT: %d\n", reason);
 
   if (WiFi.isConnected()) {
     xTimerStart(mqttReconnectTimer, 0);
@@ -67,11 +71,11 @@ void onMqttDisconnect(AsyncMqttClientDisconnectReason reason) {
 }
 
 void onMqttSubscribe(uint16_t packetId, uint8_t qos) {
-  Serial.println("Subscribe acknowledged.");
+  barmband::log::logln(ownID, "Subscribe acknowledged.");
 }
 
 void onMqttUnsubscribe(uint16_t packetId) {
-  Serial.println("Unsubscribe acknowledged.");
+  barmband::log::logln(ownID, "Unsubscribe acknowledged.");
 }
 
 void onMqttMessage(char *topic, char *payload,
@@ -98,7 +102,7 @@ void onMqttMessage(char *topic, char *payload,
           partnerID = newPairMessage.firstBandId;
           color = newPairMessage.color;
         }
-        Serial.printf("New partner: %s\n", partnerID);
+        barmband::log::logf(ownID, "New partner: %s\n", partnerID);
         setState(barmband::state::paired);
       }
     }
@@ -111,7 +115,7 @@ void onMqttMessage(char *topic, char *payload,
       if (currentState == barmband::state::paired &&
           abortMessage.bandId == partnerID) {
         // TODO: notify user
-        Serial.println("partner aborted challenge");
+        barmband::log::logln(ownID, "partner aborted challenge");
         setState(barmband::state::idle);
       }
     }
@@ -124,9 +128,14 @@ void onMqttMessage(char *topic, char *payload,
               pairFoundMessage.firstBandId == ownID ||
           pairFoundMessage.secondBandId == ownID) {
         // TODO: notify user
-        Serial.println("partner found me");
+        barmband::log::logln(ownID, "partner found me");
         setState(barmband::state::idle);
       }
+    }
+
+    if (!newPairMessage.isOk && !abortMessage.isOk && !pairFoundMessage.isOk) {
+      barmband::log::logf(ownID, "Unknown message '%s' in topic %s\n", msg.c_str(),
+                          topic);
     }
   }
 }
@@ -135,7 +144,7 @@ void onMqttPublish(uint16_t packetId) {
   if (packetId == registrationPacketId) {
     Serial.println("registration message sent");
     registrationPacketId = 0;
-    currentState = barmband::state::idle;
+    setState(barmband::state::idle);
   }
 }
 
@@ -143,13 +152,13 @@ void WiFiEvent(WiFiEvent_t event) {
   Serial.printf("[WiFi-event] event: %d\n", event);
   switch (event) {
     case SYSTEM_EVENT_STA_GOT_IP:
-      Serial.println("WiFi connected");
+      barmband::log::logln(ownID, "WiFi connected");
       Serial.println("IP address: ");
       Serial.println(WiFi.localIP());
       connectToMqtt();
       break;
     case SYSTEM_EVENT_STA_DISCONNECTED:
-      Serial.println("WiFi lost connection");
+      barmband::log::logln(ownID, "WiFi lost connection");
       xTimerStop(
           mqttReconnectTimer,
           0);  // ensure we don't reconnect to MQTT while reconnecting to Wi-Fi
@@ -200,11 +209,13 @@ void loop() {
   byte id = rdm6300.get_tag_id();
 
   buttonCurrentState = digitalRead(BUTTON_PIN);
-
+  if (id != 0) {
+    barmband::log::logf(ownID, "Scanned tag: %X", id);
+  }
   if (buttonLastState == LOW && buttonCurrentState == HIGH &&
       millis() - buttonLastActivationTime > MIN_DEBOUNCE_TIME) {
     buttonLastActivationTime = millis();
-    Serial.println("Button input detected");
+    barmband::log::logln(ownID, "Button input detected");
     switch (currentState) {
         // Request pardner 🤠
       case (barmband::state::idle):
