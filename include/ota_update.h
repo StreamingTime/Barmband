@@ -1,8 +1,13 @@
-#include <WiFi.h>
-#include <WiFiClient.h>
-#include <WebServer.h>
+/*
+This code is taken from
+https://randomnerdtutorials.com/esp32-over-the-air-ota-programming/
+*/
+
 #include <ESPmDNS.h>
 #include <Update.h>
+#include <WebServer.h>
+#include <WiFi.h>
+#include <WiFiClient.h>
 
 WebServer server(80);
 
