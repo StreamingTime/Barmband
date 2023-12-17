@@ -134,8 +134,8 @@ void onMqttMessage(char *topic, char *payload,
     }
 
     if (!newPairMessage.isOk && !abortMessage.isOk && !pairFoundMessage.isOk) {
-      barmband::log::logf(ownID, "Unknown message '%s' in topic %s\n", msg.c_str(),
-                          topic);
+      barmband::log::logf(ownID, "Unknown message '%s' in topic %s\n",
+                          msg.c_str(), topic);
     }
   }
 }
@@ -206,11 +206,17 @@ void loop() {
   // todo: blink/wa
   handleLED(currentState, color);
 
-  byte id = rdm6300.get_tag_id();
+  uint32_t id = rdm6300.get_new_tag_id();
 
   buttonCurrentState = digitalRead(BUTTON_PIN);
   if (id != 0) {
-    barmband::log::logf(ownID, "Scanned tag: %X", id);
+    String idStr = String(id);
+    barmband::log::logf(ownID, "Scanned tag: %08X", idStr);
+    if (currentState == barmband::state::paired) {
+      char message[29];
+      sprintf(message, "Pair found %s %08X", ownID, idStr);
+      mqttClient.publish(MQTT_CHALLENGE_TOPIC, 1, true, message);
+    }
   }
   if (buttonLastState == LOW && buttonCurrentState == HIGH &&
       millis() - buttonLastActivationTime > MIN_DEBOUNCE_TIME) {
@@ -222,7 +228,7 @@ void loop() {
         char messageIdle[25];
         sprintf(messageIdle, "Request partner %s", ownID);
         Serial.println(messageIdle);
-        mqttClient.publish("barmband/challenge", 1, true, messageIdle);
+        mqttClient.publish(MQTT_CHALLENGE_TOPIC, 1, true, messageIdle);
         setState(barmband::state::waiting);
         break;
 
@@ -232,7 +238,7 @@ void loop() {
         char messageAbort[15];
         sprintf(messageAbort, "Abort %s", ownID);
         Serial.println(messageAbort);
-        mqttClient.publish("barmband/challenge", 1, true, messageAbort);
+        mqttClient.publish(MQTT_CHALLENGE_TOPIC, 1, true, messageAbort);
         setState(barmband::state::idle);
         break;
     }
