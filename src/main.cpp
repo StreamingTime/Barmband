@@ -60,9 +60,6 @@ void onMqttConnect(bool sessionPresent) {
   registrationPacketId = mqttClient.publish(MQTT_SETUP_TOPIC, 1, true, message);
 
   barmband::log::setLoggingMqttclient(&mqttClient);
-
-  barmband::log::logln(ownID, "logln test");
-  barmband::log::logf(ownID, "logf test %d %s\n", 123, "foo");
 }
 
 void onMqttDisconnect(AsyncMqttClientDisconnectReason reason) {
