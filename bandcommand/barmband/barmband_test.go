@@ -36,3 +36,10 @@ func TestIdFromString(t *testing.T) {
 		}
 	})
 }
+
+func TestIdToString(t *testing.T) {
+
+	id := BarmbandId([]byte{0x12, 0x34, 0x56, 0x78})
+
+	assert.Equal(t, "12345678", IdToString(id))
+}

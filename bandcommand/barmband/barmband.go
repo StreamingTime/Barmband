@@ -10,6 +10,10 @@ type BarmbandId = [4]byte
 
 var InvalidLengthError = errors.New("barmband id has invalid length")
 
+func IdToString(id BarmbandId) string {
+	return fmt.Sprintf("%X", id)
+}
+
 // IdFromString converts  the string "12345678" to the BarmbandId []byte{0x12, 0x34, 0x56, 0x78}
 func IdFromString(s string) (BarmbandId, error) {
 	if len(s) != 8 {
