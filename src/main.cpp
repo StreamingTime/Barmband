@@ -17,7 +17,6 @@ TimerHandle_t wifiReconnectTimer;
 #define RDM6300_RX_PIN 5
 #define BUTTON_PIN 4
 String ownID = "";
-// String ownID = "63D592A9";
 String partnerID = "";
 uint32_t color = 0;
 
@@ -181,7 +180,6 @@ void scanNewId() {
   preferences.putString("ownID", ownID);
   Serial.println("Saved new RFID tag ID: " + ownID);
   Serial.println("Restarting...");
-  ESP.restart();
 }
 
 void connectToWifi() { WiFi.begin(WIFI_SSID, WIFI_PASSWORD); }
@@ -223,17 +221,12 @@ void setup() {
 
   ownID = preferences.getString("ownID", "");
 
-  if (ownID != "") {
-    if (buttonCurrentState == HIGH) {
-      Serial.println("ENTERING NEW ID SETUP MODE");
-      scanNewId();
-    }
-
-    Serial.println("Own ID found in preferences: " + ownID);
-
-  } else {
-    Serial.println("Scan new RFID tag...");
+  if (ownID == "" || buttonCurrentState == HIGH) {
+    Serial.println("Scanning new tag ID");
     scanNewId();
+    ESP.restart();
+  } else {
+    Serial.println("Own ID found in preferences: " + ownID);
   }
 
   setState(barmband::state::startup);
