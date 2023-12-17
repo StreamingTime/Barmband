@@ -35,8 +35,8 @@ const PairFoundMessagePrefix = "Pair found"
 const AbortMessagePrefix = "Abort"
 const RequestPartnerPrefix = "Request partner"
 
-var UnknownMessageError = errors.New("unknown message")
-var EmptyBandId = errors.New("EmptyBandId")
+var ErrUnknownMessage = errors.New("unknown message")
+var ErrEmptyBandId = errors.New("empty band id")
 
 // messageParsers maps a message prefix to a messageParser
 var messageParsers = map[string]messageParser{
@@ -55,7 +55,7 @@ func ParseMessage(message string) (Message, error) {
 		}
 	}
 
-	return nil, UnknownMessageError
+	return nil, ErrUnknownMessage
 }
 
 func parseSetupMessage(message string) (Message, error) {
@@ -69,7 +69,7 @@ func parseSetupMessage(message string) (Message, error) {
 		return nil, err
 	}
 	if bandIdS == "" {
-		return nil, EmptyBandId
+		return nil, ErrEmptyBandId
 	}
 
 	bandId, err := barmband.IdFromString(bandIdS)
@@ -93,7 +93,7 @@ func parsePairFoundMessage(message string) (Message, error) {
 		return nil, err
 	}
 	if firstBandIdS == "" || secondBandIdS == "" {
-		return nil, EmptyBandId
+		return nil, ErrEmptyBandId
 	}
 
 	firstBandId, err := barmband.IdFromString(firstBandIdS)
@@ -123,7 +123,7 @@ func parseAbortMessage(message string) (Message, error) {
 		return nil, err
 	}
 	if bandIdS == "" {
-		return nil, EmptyBandId
+		return nil, ErrEmptyBandId
 	}
 
 	bandId, err := barmband.IdFromString(bandIdS)
@@ -146,7 +146,7 @@ func parseRequestPartnerMessage(message string) (Message, error) {
 		return nil, err
 	}
 	if bandIdS == "" {
-		return nil, EmptyBandId
+		return nil, ErrEmptyBandId
 	}
 
 	bandId, err := barmband.IdFromString(bandIdS)
