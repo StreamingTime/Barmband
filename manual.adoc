@@ -68,6 +68,11 @@ pio device monitor
 
 == Bandcommand
 
+=== Configuration
+
+The MQT broker can be configured using the constants defined in `cmd/main.go`.
+
+=== Building
 To build the management software, you need to https://go.dev/doc/install[install Go].
 
 Inside the `bandcommand` directory, use 
