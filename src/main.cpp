@@ -221,6 +221,8 @@ void setup() {
       }
       preferences.putString("ownID", ownID);
       Serial.println("Saved new RFID tag ID: " + ownID);
+      Serial.println("Restarting...");
+      ESP.restart();
     }
     Serial.println("Own ID found in preferences: " + ownID);
   } else {
@@ -234,6 +236,8 @@ void setup() {
     ownID = String(rdm6300.get_tag_id());
     preferences.putString("ownID", ownID);
     Serial.println("Saved RFID tag ID: " + ownID);
+    Serial.println("Restarting...");
+    ESP.restart();
   }
 
   setState(barmband::state::startup);
