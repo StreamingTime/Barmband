@@ -7,6 +7,7 @@
 #include "ledController.hpp"
 #include "messages.h"
 #include "state.h"
+#include "ota_update.h"
 
 AsyncMqttClient mqttClient;
 TimerHandle_t mqttReconnectTimer;
@@ -182,6 +183,7 @@ void setup() {
 
   init();
   initLED();
+  initOtaUpdate(ownID);
 
   rdm6300.begin(RDM6300_RX_PIN);
 
@@ -192,6 +194,8 @@ void setup() {
 
 void loop() {
   // todo: blink/wa
+  server.handleClient();
+
   handleLED(currentState);
 
   byte id = rdm6300.get_tag_id();
