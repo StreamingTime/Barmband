@@ -99,12 +99,12 @@ func (bc *DefaultBandCommand) HandleSetupMessage(setupMessage *messaging.SetupMe
 		return b.Id == setupMessage.BarmbandId
 	})
 	if idAlreadyRegistered {
-		fmt.Printf("Band id %s is alredy registered\n", setupMessage.BarmbandId)
+		fmt.Printf("Band id %s is already registered\n", barmband.IdToString(setupMessage.BarmbandId))
 	} else {
 		bc.barmbands = append(bc.barmbands, barmband.Barmband{
 			Id: setupMessage.BarmbandId,
 		})
-		fmt.Printf("registered band %v\n", setupMessage.BarmbandId)
+		fmt.Printf("registered band %s\n", barmband.IdToString(setupMessage.BarmbandId))
 	}
 }
 
@@ -153,12 +153,12 @@ func (bc *DefaultBandCommand) HandleAbortMessage(message *messaging.AbortMessage
 
 func (bc *DefaultBandCommand) HandleRequestPartnerMessage(message *messaging.RequestPartnerMessage) {
 	if !bc.isRegistered(message.BarmbandId) {
-		log.Printf("Band %s is not registered\n", message.BarmbandId)
+		log.Printf("Band %s is not registered\n", barmband.IdToString(message.BarmbandId))
 		return
 	}
 
 	if bc.hasMatch(message.BarmbandId) {
-		log.Printf("Band %s already has match\n", message.BarmbandId)
+		log.Printf("Band %s already has match\n", barmband.IdToString(message.BarmbandId))
 		return
 	}
 
@@ -166,7 +166,7 @@ func (bc *DefaultBandCommand) HandleRequestPartnerMessage(message *messaging.Req
 
 	if partnerId == nil {
 		bc.setWantsPair(message.BarmbandId, true)
-		log.Printf("Band %s wants pair\n", message.BarmbandId)
+		log.Printf("Band %s wants pair\n", barmband.IdToString(message.BarmbandId))
 
 		return
 	}
@@ -180,7 +180,7 @@ func (bc *DefaultBandCommand) HandleRequestPartnerMessage(message *messaging.Req
 
 	pair := barmband.NewPair(message.BarmbandId, *partnerId, c)
 
-	log.Printf("Found pair %s %s\n", pair.First, pair.Second)
+	log.Printf("Found pair %s %s\n", barmband.IdToString(message.BarmbandId), barmband.IdToString(message.BarmbandId))
 
 	bc.pairsMutex.Lock()
 	bc.pairs = append(bc.pairs, pair)
