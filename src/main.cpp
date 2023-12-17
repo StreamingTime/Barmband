@@ -211,6 +211,11 @@ void loop() {
   buttonCurrentState = digitalRead(BUTTON_PIN);
   if (id != 0) {
     barmband::log::logf(ownID, "Scanned tag: %X", id);
+    if (currentState == barmband::state::paired) {
+      char message[29];
+      sprintf(message, "Pair found %s %s", ownID, id);
+      mqttClient.publish("barmband/challenge", 1, true, message);
+    }
   }
   if (buttonLastState == LOW && buttonCurrentState == HIGH &&
       millis() - buttonLastActivationTime > MIN_DEBOUNCE_TIME) {
