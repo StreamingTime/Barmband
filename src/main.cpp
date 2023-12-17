@@ -1,4 +1,5 @@
 #include <AsyncMqttClient.h>
+#include <EEPROM.h>
 #include <WiFi.h>
 #include <rdm6300.h>
 
@@ -15,8 +16,8 @@ TimerHandle_t wifiReconnectTimer;
 
 #define RDM6300_RX_PIN 5
 #define BUTTON_PIN 4
-
-String ownID = "63D592A9";
+String ownID = "";
+// String ownID = "63D592A9";
 String partnerID = "";
 uint32_t color = 0;
 
@@ -202,16 +203,31 @@ void setup() {
 
   buttonCurrentState = digitalRead(BUTTON_PIN);
 
-  if (buttonCurrentState == HIGH) {
-    Serial.println("ENTERING ID SETUP MODE");
-    Serial.println("Please scan your own tag.");
-    Serial.println(
-        "When scanned, press the button again to finish the setup process.");
-    setState(barmband::state::registerId);
-    buttonLastState = buttonCurrentState;
+  EEPROM.get(0, ownID);
+
+  if (ownID != "") {
+    // ownID found in EEPROM
+    Serial.println("Own ID found in EEPROM: " + ownID);
   } else {
-    setState(barmband::state::startup);
+    // ownID not found, scan RFID tag
+    Serial.println("Scan RFID tag...");
+
+    // You can use rdm6300.readTag() in your implementation to detect RFID tag
+    while (rdm6300.get_tag_id() == 0) {
+      // Waiting for RFID tag
+      Serial.println("Waiting for RFID tag...");
+    }
+
+    // RFID tag detected, get the tag ID
+    String tagID = String(rdm6300.get_tag_id());
+    Serial.println("RFID tag ID: " + tagID);
+
+    // Save the tag ID to EEPROM
+    EEPROM.put(0, tagID);
+    Serial.println("RFID tag ID saved to EEPROM");
   }
+
+  setState(barmband::state::startup);
 }
 
 void loop() {
@@ -219,44 +235,34 @@ void loop() {
   byte id = rdm6300.get_tag_id();
   buttonCurrentState = digitalRead(BUTTON_PIN);
 
-  if (barmband::state::registerId) {
-    if (id != 0) {
-      ownID = id;
-    }
-    if (buttonLastState == LOW && buttonCurrentState == HIGH) {
-      Serial.println("exiting ID setup mode.");
-      setState(barmband::state::startup);
-    }
-  } else {
-    handleLED(currentState, color);
+  handleLED(currentState, color);
 
-    if (id != 0) {
-      barmband::log::logf(ownID, "Scanned tag: %X", id);
-    }
-    if (buttonLastState == LOW && buttonCurrentState == HIGH &&
-        millis() - buttonLastActivationTime > MIN_DEBOUNCE_TIME) {
-      buttonLastActivationTime = millis();
-      barmband::log::logln(ownID, "Button input detected");
-      switch (currentState) {
-          // Request pardner 🤠
-        case (barmband::state::idle):
-          char messageIdle[25];
-          sprintf(messageIdle, "Request partner %s", ownID);
-          Serial.println(messageIdle);
-          mqttClient.publish("barmband/challenge", 1, true, messageIdle);
-          setState(barmband::state::waiting);
-          break;
+  if (id != 0) {
+    barmband::log::logf(ownID, "Scanned tag: %X", id);
+  }
+  if (buttonLastState == LOW && buttonCurrentState == HIGH &&
+      millis() - buttonLastActivationTime > MIN_DEBOUNCE_TIME) {
+    buttonLastActivationTime = millis();
+    barmband::log::logln(ownID, "Button input detected");
+    switch (currentState) {
+        // Request pardner 🤠
+      case (barmband::state::idle):
+        char messageIdle[25];
+        sprintf(messageIdle, "Request partner %s", ownID);
+        Serial.println(messageIdle);
+        mqttClient.publish("barmband/challenge", 1, true, messageIdle);
+        setState(barmband::state::waiting);
+        break;
 
-        // Abort when waiting or paired
-        case (barmband::state::paired):
-        case (barmband::state::waiting):
-          char messageAbort[15];
-          sprintf(messageAbort, "Abort %s", ownID);
-          Serial.println(messageAbort);
-          mqttClient.publish("barmband/challenge", 1, true, messageAbort);
-          setState(barmband::state::idle);
-          break;
-      }
+      // Abort when waiting or paired
+      case (barmband::state::paired):
+      case (barmband::state::waiting):
+        char messageAbort[15];
+        sprintf(messageAbort, "Abort %s", ownID);
+        Serial.println(messageAbort);
+        mqttClient.publish("barmband/challenge", 1, true, messageAbort);
+        setState(barmband::state::idle);
+        break;
     }
   }
   buttonLastState = buttonCurrentState;
