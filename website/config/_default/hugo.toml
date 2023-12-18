@@ -1,4 +1,4 @@
-title = "My Docs"
+title = "B"
 baseurl = "https://barmband.fb3pool.hs-flensburg.de/"
 canonifyURLs = false
 disableAliases = true
@@ -82,7 +82,7 @@ rel  = "sitemap"
     weight = 10
 
 [imaging]
-  anchor = "Smart"
+  anchor = "Center"
   bgColor = "#ffffff"
   hint = "photo"
   quality = 75

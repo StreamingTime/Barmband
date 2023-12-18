@@ -1,6 +1,6 @@
 # Hugo
-title = "My Docs"
-description = "Congrats on setting up a new Doks project!"
+title = "Barmband"
+description = "Barmband is a wearable wristband designed to gamify social interactions."
 images = ["cover.png"]
 
 # Doks (@hyas/doks-core)
