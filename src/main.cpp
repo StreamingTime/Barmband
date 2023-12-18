@@ -1,32 +1,45 @@
 #include <AsyncMqttClient.h>
-#include <FastLED.h>
+#include <Preferences.h>
 #include <WiFi.h>
 #include <rdm6300.h>
 
 #include "Arduino.h"
 #include "config.h"
-#include "readChip.hpp"
+#include "ledController.h"
+#include "logging.h"
+#include "messages.h"
+#include "state.h"
 
 AsyncMqttClient mqttClient;
 TimerHandle_t mqttReconnectTimer;
 TimerHandle_t wifiReconnectTimer;
 
-#define LED_PIN 12
-#define RDM6300_RX_PIN \
-  5  // read the SoftwareSerial doc above! may need to change this pin to 10...
+#define RDM6300_RX_PIN 5
+#define BUTTON_PIN 4
+String ownID = "";
+String partnerID = "";
+uint32_t color = 0;
 
-// #define NUM_LEDS 11
-#define NUM_LEDS 8
-#define BRIGHTNESS 64
-#define LED_TYPE WS2812
-CRGB leds[NUM_LEDS];
+Preferences preferences;
 
-#define UPDATES_PER_SECOND 100
+barmband::state::bandState currentState = barmband::state::startup;
 
-byte ownID[4] = {0x63, 0xD5, 0x92, 0xA9};
+int buttonLastState = HIGH;
+int buttonCurrentState;  // the previous state from the input pin
 
-int state = 0;
+// button debouncing
+const unsigned long MIN_DEBOUNCE_TIME = 1500;  // in millis
+unsigned long buttonLastActivationTime;
 Rdm6300 rdm6300;
+
+// packet id of the last registration message sent
+uint16_t registrationPacketId = 0;
+
+void setState(barmband::state::bandState newState) {
+  barmband::log::logf(ownID, "New state: %s\n",
+                      barmband::state::bandStateNames[newState]);
+  currentState = newState;
+}
 
 void connectToMqtt() {
   Serial.println("Connecting to MQTT...");
@@ -37,19 +50,22 @@ void onMqttConnect(bool sessionPresent) {
   Serial.println("Connected to MQTT.");
   Serial.print("Session present: ");
   Serial.println(sessionPresent);
-  uint16_t packetIdSub = mqttClient.subscribe(MQTT_TOPIC, 2);
-  Serial.print("Subscribing at QoS 2, packetId: ");
-  Serial.println(packetIdSub);
-  mqttClient.publish(MQTT_TOPIC, 1, true, "Barmband connected to MQTT");
-  Serial.println(mqttClient.getClientId());  // esp32-f4b998c3dc24
 
   // subscribe to topics to be able to receive messages
-  mqttClient.subscribe("scan", 0);
-  mqttClient.subscribe("setup", 0);
+  mqttClient.subscribe(MQTT_SETUP_TOPIC, 0);
+  mqttClient.subscribe(MQTT_CHALLENGE_TOPIC, 0);
+
+  // Registration
+  char message[16];
+  sprintf(message, "Hello %s", ownID);
+  Serial.println(message);
+  registrationPacketId = mqttClient.publish(MQTT_SETUP_TOPIC, MQTT_QOS, true, message);
+
+  barmband::log::setLoggingMqttclient(&mqttClient);
 }
 
 void onMqttDisconnect(AsyncMqttClientDisconnectReason reason) {
-  Serial.printf("Disconnected from MQTT: %d\n", reason);
+  barmband::log::logf(ownID, "Disconnected from MQTT: %d\n", reason);
 
   if (WiFi.isConnected()) {
     xTimerStart(mqttReconnectTimer, 0);
@@ -57,81 +73,114 @@ void onMqttDisconnect(AsyncMqttClientDisconnectReason reason) {
 }
 
 void onMqttSubscribe(uint16_t packetId, uint8_t qos) {
-  Serial.println("Subscribe acknowledged.");
-  Serial.print("  packetId: ");
-  Serial.println(packetId);
-  Serial.print("  qos: ");
-  Serial.println(qos);
+  barmband::log::logln(ownID, "Subscribe acknowledged.");
 }
 
 void onMqttUnsubscribe(uint16_t packetId) {
-  Serial.println("Unsubscribe acknowledged.");
-  Serial.print("  packetId: ");
-  Serial.println(packetId);
+  barmband::log::logln(ownID, "Unsubscribe acknowledged.");
 }
 
 void onMqttMessage(char *topic, char *payload,
                    AsyncMqttClientMessageProperties properties, size_t len,
                    size_t index, size_t total) {
-  Serial.println("Publish received.");
-  Serial.print("  topic: ");
-  Serial.println(topic);
-  Serial.print("  qos: ");
-  Serial.println(properties.qos);
-  Serial.print("  dup: ");
-  Serial.println(properties.dup);
-  Serial.print("  retain: ");
-  Serial.println(properties.retain);
-  Serial.print("  len: ");
-  Serial.println(len);
-  Serial.print("  index: ");
-  Serial.println(index);
-  Serial.print("  total: ");
-  Serial.println(total);
+  Serial.printf("Publish received on topic %s\n", topic);
 
   String msg(payload, len);
 
-  if (strcmp(topic, "setup") == 0) {
-    //msg should contain basic setup stuff (whatever that could be)
+  if (strcmp(topic, MQTT_CHALLENGE_TOPIC) == 0) {
     Serial.println(msg);
-  }
 
-  if (strcmp(topic, "matchmaking") == 0) {
-    //msg should contain two IDs who are then searching for each other
-    Serial.println(msg);
-  }
+    auto newPairMessage = barmband::messages::parseNewPairMessage(msg);
+    if (newPairMessage.isOk) {
+      Serial.println("got new pair message");
 
-  if (strcmp(topic, "scan") == 0) {
-    //msg should contain two IDs who just matched
-    //these IDs should not match again in the future
-    Serial.println(msg);
+      if (currentState == barmband::state::waiting) {
+        if (newPairMessage.firstBandId == ownID) {
+          Serial.println("It's for me!");
+          partnerID = newPairMessage.secondBandId;
+          color = newPairMessage.color;
+        } else if (newPairMessage.secondBandId == ownID) {
+          Serial.println("It's for me!");
+          partnerID = newPairMessage.firstBandId;
+          color = newPairMessage.color;
+        }
+        barmband::log::logf(ownID, "New partner: %s\n", partnerID);
+        setState(barmband::state::paired);
+      }
+    }
+
+    // TODO: don't run other parsers when one succeeds
+    auto abortMessage = barmband::messages::parseAbortMessage(msg);
+    if (abortMessage.isOk) {
+      Serial.println("got abort message");
+
+      if (currentState == barmband::state::paired &&
+          abortMessage.bandId == partnerID) {
+        // TODO: notify user
+        barmband::log::logln(ownID, "partner aborted challenge");
+        setState(barmband::state::idle);
+      }
+    }
+
+    auto pairFoundMessage = barmband::messages::parsePairFoundMessage(msg);
+    if (pairFoundMessage.isOk) {
+      Serial.println("got pair found message");
+
+      if (currentState == barmband::state::paired &&
+              pairFoundMessage.firstBandId == ownID ||
+          pairFoundMessage.secondBandId == ownID) {
+        // TODO: notify user
+        barmband::log::logln(ownID, "partner found me");
+        setState(barmband::state::idle);
+      }
+    }
+
+    if (!newPairMessage.isOk && !abortMessage.isOk && !pairFoundMessage.isOk) {
+      barmband::log::logf(ownID, "Unknown message '%s' in topic %s\n",
+                          msg.c_str(), topic);
+    }
   }
-  // Serial.println(msg);
 }
 
 void onMqttPublish(uint16_t packetId) {
-  Serial.println("Publish acknowledged.");
-  Serial.print("  packetId: ");
-  Serial.println(packetId);
+  if (packetId == registrationPacketId) {
+    Serial.println("registration message sent");
+    registrationPacketId = 0;
+    setState(barmband::state::idle);
+  }
 }
 
 void WiFiEvent(WiFiEvent_t event) {
   Serial.printf("[WiFi-event] event: %d\n", event);
   switch (event) {
     case SYSTEM_EVENT_STA_GOT_IP:
-      Serial.println("WiFi connected");
+      barmband::log::logln(ownID, "WiFi connected");
       Serial.println("IP address: ");
       Serial.println(WiFi.localIP());
       connectToMqtt();
       break;
     case SYSTEM_EVENT_STA_DISCONNECTED:
-      Serial.println("WiFi lost connection");
+      barmband::log::logln(ownID, "WiFi lost connection");
       xTimerStop(
           mqttReconnectTimer,
           0);  // ensure we don't reconnect to MQTT while reconnecting to Wi-Fi
       xTimerStart(wifiReconnectTimer, 0);
       break;
   }
+}
+
+void scanNewId() {
+  uint32_t tagID = 0;
+
+  while (tagID == 0) {
+    Serial.println("Waiting for RFID tag...");
+    tagID = rdm6300.get_new_tag_id();
+    delay(1000);
+  }
+
+  char newID[9];
+  sprintf(newID, "%08X", tagID);
+  preferences.putString("ownID", newID);
 }
 
 void connectToWifi() { WiFi.begin(WIFI_SSID, WIFI_PASSWORD); }
@@ -159,42 +208,72 @@ void setup() {
   connectToWifi();
 
   init();
-
-  FastLED.addLeds<WS2812, LED_PIN, RGB>(leds,
-                                        NUM_LEDS);  // GRB ordering is typical
-  FastLED.setBrightness(BRIGHTNESS);
+  initLED();
 
   rdm6300.begin(RDM6300_RX_PIN);
 
   Serial.println("\nrdm6300 started...\n");
+
+  pinMode(BUTTON_PIN, INPUT_PULLDOWN);
+
+  buttonCurrentState = digitalRead(BUTTON_PIN);
+
+  preferences.begin("barmband", false);
+
+  ownID = preferences.getString("ownID", "");
+
+  if (ownID == "" || buttonCurrentState == HIGH) {
+    Serial.println("Scanning new tag ID");
+    scanNewId();
+    ESP.restart();
+  } else {
+    Serial.println("Own ID found in preferences: " + ownID);
+  }
+
+  setState(barmband::state::startup);
 }
 
 void loop() {
   // todo: blink/wa
+  buttonCurrentState = digitalRead(BUTTON_PIN);
 
-  byte id = rdm6300.get_tag_id();
+  handleLED(currentState, color);
 
+  uint32_t id = rdm6300.get_new_tag_id();
+
+  buttonCurrentState = digitalRead(BUTTON_PIN);
   if (id != 0) {
-    Serial.println(id);
-    /*
-    char *buff = (char *)malloc(30);
-    sprintf(buff, "{ownID: %s, message: Scanned card with ID %s",
-    mqttClient.getClientId(), id);
-
-    mqttClient.publish(MQTT_TOPIC, 1, true, buff);
-
-    // check if target id is correct
-    char *buff = (char *)malloc(25);
-
-    sprintf(buff, "scanned tag %s", id);
-
-    mqttClient.publish(MQTT_TOPIC, 1, true, buff);
-    */
-  } else {
-    // solid color
-    for (int i = 0; i < NUM_LEDS; i++) {
-      leds[i] = CRGB::Cyan;
+    barmband::log::logf(ownID, "Scanned tag: %08X", id);
+    if (currentState == barmband::state::paired) {
+      char message[29];
+      sprintf(message, "Pair found %s %08X", ownID, id);
+      mqttClient.publish(MQTT_CHALLENGE_TOPIC, 1, true, message);
     }
   }
-  FastLED.show();
+  if (buttonLastState == LOW && buttonCurrentState == HIGH &&
+      millis() - buttonLastActivationTime > MIN_DEBOUNCE_TIME) {
+    buttonLastActivationTime = millis();
+    barmband::log::logln(ownID, "Button input detected");
+    switch (currentState) {
+        // Request pardner 🤠
+      case (barmband::state::idle):
+        char messageIdle[25];
+        sprintf(messageIdle, "Request partner %s", ownID);
+        Serial.println(messageIdle);
+        mqttClient.publish(MQTT_CHALLENGE_TOPIC, MQTT_QOS, true, messageIdle);
+        setState(barmband::state::waiting);
+        break;
+
+      // Abort when waiting or paired
+      case (barmband::state::paired):
+      case (barmband::state::waiting):
+        char messageAbort[15];
+        sprintf(messageAbort, "Abort %s", ownID);
+        Serial.println(messageAbort);
+        mqttClient.publish(MQTT_CHALLENGE_TOPIC, MQTT_QOS, true, messageAbort);
+        setState(barmband::state::idle);
+        break;
+    }
+  }
+  buttonLastState = buttonCurrentState;
 }
