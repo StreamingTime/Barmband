@@ -1,6 +1,17 @@
 # Barmband
 
+Link: https://barmband.fb3pool.hs-flensburg.de/
+
+Barmband is a wearable wristband designed to gamify social interactions. The concept is driven by the often daunting task of starting conversations in bars and pubs, where socialising is the lifeblood. Barmband offers an innovative solution - a fun, engaging tool that acts as an icebreaker in these social environments.
+
+## Useful Links
+
+- Project description: https://barmband.fb3pool.hs-flensburg.de/project/
+- Guide / manual: https://barmband.fb3pool.hs-flensburg.de/docs/guides/get-started/
+- Lookbook: https://barmband.fb3pool.hs-flensburg.de/lookbook/
+
 [Graphical messaging and communication overview](https://www.tldraw.com/v/N9df8NquTPFi5-Oo25JAq?viewport=-170,48,1920,963&page=page:page)
+
 ## Prerequisites
 
 ### MQTT broker
