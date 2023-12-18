@@ -82,7 +82,7 @@ rel  = "sitemap"
     weight = 10
 
 [imaging]
-  anchor = "Smart"
+  anchor = "Center"
   bgColor = "#ffffff"
   hint = "photo"
   quality = 75
