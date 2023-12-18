@@ -59,7 +59,8 @@ void onMqttConnect(bool sessionPresent) {
   char message[16];
   sprintf(message, "Hello %s", ownID);
   Serial.println(message);
-  registrationPacketId = mqttClient.publish(MQTT_SETUP_TOPIC, MQTT_QOS, true, message);
+  registrationPacketId =
+      mqttClient.publish(MQTT_SETUP_TOPIC, MQTT_QOS, true, message);
 
   barmband::log::setLoggingMqttclient(&mqttClient);
 }
@@ -116,7 +117,6 @@ void onMqttMessage(char *topic, char *payload,
 
       if (currentState == barmband::state::paired &&
           abortMessage.bandId == partnerID) {
-        // TODO: notify user
         barmband::log::logln(ownID, "partner aborted challenge");
         setState(barmband::state::idle);
       }
@@ -126,10 +126,13 @@ void onMqttMessage(char *topic, char *payload,
     if (pairFoundMessage.isOk) {
       Serial.println("got pair found message");
 
-      if (currentState == barmband::state::paired &&
-              pairFoundMessage.firstBandId == ownID ||
-          pairFoundMessage.secondBandId == ownID) {
-        // TODO: notify user
+      bool isOwnID = pairFoundMessage.firstBandId == ownID ||
+                     pairFoundMessage.secondBandId == ownID;
+
+      bool isPartnerID = pairFoundMessage.firstBandId == partnerID ||
+                         pairFoundMessage.secondBandId == partnerID;
+
+      if (currentState == barmband::state::paired && isOwnID && isPartnerID) {
         barmband::log::logln(ownID, "partner found me");
         setState(barmband::state::idle);
       }
