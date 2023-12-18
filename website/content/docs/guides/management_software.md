@@ -45,4 +45,6 @@ If you want to run your own Broker, you can use the Docker Compose setup in the 
 docker compose up
 ```
 
+## MQTT Client
 
+If you want to have a look at the messages sent by the Barmband and Bandcommand, we recommend the [MQTTX](https://mqttx.app/) client.

@@ -10,6 +10,8 @@ toc: true
 
 Depending on the operating system you use, make sure you have the correct drivers in place to flash the ESP.
 
+The source code for the Barmband and the management software Bandcommand can be found in the [git repository](https://gitlab.hs-flensburg.de/teaching/microcontroller-programmierung-wise-23-24/barmband).
+
 ## Parts
 
 - an ESP32 [board](https://www.makershop.de/plattformen/nodemcu/espressif-esp32-dev-kit-board/)
