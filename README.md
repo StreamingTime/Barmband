@@ -4,6 +4,18 @@ Link: https://barmband.fb3pool.hs-flensburg.de/
 
 Barmband is a wearable wristband designed to gamify social interactions. The concept is driven by the often daunting task of starting conversations in bars and pubs, where socialising is the lifeblood. Barmband offers an innovative solution - a fun, engaging tool that acts as an icebreaker in these social environments.
 
+## Project structure
+
+`src` and `include` contain the Barmband firmware (PlatformIO/Arduino) [(instructions)](https://barmband.fb3pool.hs-flensburg.de/docs/guides/flashing/)
+
+`bandcommand` contains the management software (Go) [(instructions)](https://barmband.fb3pool.hs-flensburg.de/docs/guides/management-software/)
+
+`broker` contains a Docker compose setup to run a MQTT broker [(instructions)](https://barmband.fb3pool.hs-flensburg.de/docs/guides/management-software/#mqtt-broker)
+
+`ui_app` contains a Graphical user interface, visualizing the Barmbands (Processing)
+
+`website` contains sources for https://barmband.fb3pool.hs-flensburg.de (generated with Hugo)
+
 ## Useful Links
 
 - Project description: https://barmband.fb3pool.hs-flensburg.de/project/
