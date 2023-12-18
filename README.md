@@ -19,7 +19,7 @@ Barmband is a wearable wristband designed to gamify social interactions. The con
 ## Useful Links
 
 - Project description: https://barmband.fb3pool.hs-flensburg.de/project/
-- Guide / manual: https://barmband.fb3pool.hs-flensburg.de/docs/guides/get-started/
+- Installation guide: https://barmband.fb3pool.hs-flensburg.de/docs/guides/get-started/
 - Lookbook: https://barmband.fb3pool.hs-flensburg.de/lookbook/
 
 [Graphical messaging and communication overview](https://www.tldraw.com/v/N9df8NquTPFi5-Oo25JAq?viewport=-170,48,1920,963&page=page:page)
