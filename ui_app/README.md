@@ -10,4 +10,4 @@ Simply listens to MQTT traffic and displays information therein. Currently, only
 
 Open the `.pde` file in Processing IDE and run it. Depending on which MQTT messages are being sent, there's a visual representation.
 
-Depending on you setup, you can also compile it via Processing-java, as seen [here](https://stackoverflow.com/questions/46833666/how-to-compilerun-another-pde-file-in-processing).
+Depending on you setup, you can also compile it via Processing-java, as suggested [here](https://stackoverflow.com/questions/46833666/how-to-compilerun-another-pde-file-in-processing).
