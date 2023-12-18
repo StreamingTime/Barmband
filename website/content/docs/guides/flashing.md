@@ -14,7 +14,7 @@ We will assume that a working `PlatformIO Core` installation is available on you
 
 - Get the source code from the [git repository](https://gitlab.hs-flensburg.de/teaching/microcontroller-programmierung-wise-23-24/barmband)
 - Create a copy of the `include/config_example.h` and name it `include/config.h`
-- Edit this file to fit your needs, especially `WIFI_SSID`  and `WIFI_PASSWORD`
+- Edit this file to fit your needs, especially `WIFI_SSID`  and `WIFI_PASSWORD`. You can change the MQTT Broker using `MQTT_HOST` and `MQTT_PORT` values.
 - Build and flash the software using
 ```shell
 pio run --target upload
