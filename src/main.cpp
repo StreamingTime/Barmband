@@ -8,6 +8,7 @@
 #include "ledController.h"
 #include "logging.h"
 #include "messages.h"
+#include "ota_update.h"
 #include "state.h"
 
 AsyncMqttClient mqttClient;
@@ -233,11 +234,16 @@ void setup() {
     Serial.println("Own ID found in preferences: " + ownID);
   }
 
+  initOtaUpdate(ownID);
+
+
   setState(barmband::state::startup);
 }
 
 void loop() {
-  // todo: blink/wa
+
+  server.handleClient();
+
   buttonCurrentState = digitalRead(BUTTON_PIN);
 
   handleLED(currentState, color);
