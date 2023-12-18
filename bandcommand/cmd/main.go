@@ -23,6 +23,8 @@ const ChallengeTopic = "barmband/challenge"
 
 const SetupTopic = "barmband/setup"
 
+const MqttQos = 2
+
 func makeConnectionString(host string, port string) string {
 	return fmt.Sprintf("tcp://%s:%s", host, port)
 }
@@ -53,10 +55,10 @@ func main() {
 	}
 
 	bc := bandcommand.New(func(pair barmband.Pair) {
-		firstS := fmt.Sprintf("%X", pair.First)
-		secondS := fmt.Sprintf("%X", pair.Second)
+		firstS := barmband.IdToString(pair.First)
+		secondS := barmband.IdToString(pair.Second)
 
-		client.Publish(ChallengeTopic, 0, false, fmt.Sprintf("New pair %s %s %s", firstS, secondS, pair.Color))
+		client.Publish(ChallengeTopic, MqttQos, false, fmt.Sprintf("New pair %s %s %s", firstS, secondS, pair.Color))
 	})
 
 	messageHandler := mqttMessageHandler(bc)
@@ -82,14 +84,13 @@ func main() {
 func mqttMessageHandler(bc bandcommand.BandCommand) func(client mqtt.Client, message mqtt.Message) {
 
 	return func(client mqtt.Client, message mqtt.Message) {
-		fmt.Println(message)
 		messageString := string(message.Payload())
 		msg, err := messaging.ParseMessage(messageString)
 
 		if err != nil {
 			log.Printf("Failed to parse message '%s': %s\n", messageString, err)
 		} else {
-			fmt.Printf("Got message: %v\n", msg)
+			log.Printf("Got message: %v in topic %v\n", msg.String(), message.Topic())
 			bc.HandleMessage(msg)
 		}
 	}

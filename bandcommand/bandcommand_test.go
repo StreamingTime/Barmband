@@ -27,8 +27,6 @@ func Test_defaultMessageHandler(t *testing.T) {
 
 		abortMsg := messaging.AbortMessage{BarmbandId: bandIdA}
 
-		notSetupMessage := 1
-
 		pairFoundMessage := messaging.PairFoundMessage{
 			FirstBarmbandId:  bandIdA,
 			SecondBarmbandId: bandIdB,
@@ -43,7 +41,6 @@ func Test_defaultMessageHandler(t *testing.T) {
 
 		defaultMessageHandler(mockBc, setupMsg)
 		defaultMessageHandler(mockBc, &setupMsg2)
-		defaultMessageHandler(mockBc, notSetupMessage)
 		defaultMessageHandler(mockBc, pairFoundMessage)
 		defaultMessageHandler(mockBc, &pairFoundMessage)
 

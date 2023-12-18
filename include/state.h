@@ -8,10 +8,10 @@ enum bandState {
   paired,
 };
 
-const char* bandStateNames[] {
-  "STARTUP",
-  "IDLE",
-  "WAITING",
-  "PAIRED",
+const char* const bandStateNames[]{
+    "STARTUP",
+    "IDLE",
+    "WAITING",
+    "PAIRED",
 };
-}
+} 
