@@ -40,7 +40,7 @@
 
 [[main]]
   name = "Get started"
-  url = "/get_started/"
+  url = "/docs/guides/get-started/"
   weight = 10
 
 # [[social]]
