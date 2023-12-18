@@ -36,7 +36,7 @@ We use [PlatformIO](https://platformio.org/) to build and flash the software.
 Please follow the instructions provided [here](https://platformio.org/install/integration) to install PlatformIO.
 We will assume that a working `PlatformIO Core` installation is available on your machine during the next steps.
 
-- Get the source code from the https://gitlab.hs-flensburg.de/teaching/microcontroller-programmierung-wise-23-24/barmband git repository
+- Get the source code from the [git repository](https://gitlab.hs-flensburg.de/teaching/microcontroller-programmierung-wise-23-24/barmband)
 - Create a copy of the `include/config_example.h` and name it `include/config.h`
 - Edit this file to fit your needs, especially `WIFI_SSID`  and `WIFI_PASSWORD`
 - Build and flash the software using

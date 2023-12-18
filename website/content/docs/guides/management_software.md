@@ -29,7 +29,7 @@ to start bandcommand directly.
 
 ### Tests
 
-To generate the mocks used in some of the tests, https://github.com/uber-go/mock[mockgen] is required.
+To generate the mocks used in some of the tests, [mockgen](https://github.com/uber-go/mock) is required.
 
 ```shell
 go generate _mocks/gen.go
