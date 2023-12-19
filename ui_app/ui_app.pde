@@ -78,7 +78,8 @@ class Barmband {
 }
 
 void setup() {
-  size(900, 900);
+  size(800, 500);
+  windowResizable(true);
   noStroke();
   rectMode(CENTER);
   client = new MQTTClient(this);
@@ -100,19 +101,6 @@ void setup() {
     .setSize(200, 50)
     .setBroadcast(true)
     ;
-
-  /*
-  cp5.addButton("PrintBarmbands")
-   .setColorBackground(blue)
-   .setColorForeground(dblue)
-   .setBroadcast(false)
-   .setFont(font)
-   .setCaptionLabel("Print Barmbands")
-   .setPosition(width/2 - 100, height - 130)
-   .setSize(200, 50)
-   .setBroadcast(true)
-   ;
-   */
 }
 
 void draw() {
@@ -143,8 +131,20 @@ void messageReceived(String topic, byte[] payload) {
 
   if (topic.equals("barmband/setup")) {
     println("Barmband with ID: " + p[1]);
-    Barmband b = new Barmband(p[1], new PVector(random(0, width), random(0, height)), barmbands, color(#000000), "inactive");
-    barmbands.add(b);
+
+    boolean canBeAdded = true;
+
+    for (Barmband bb : barmbands) {
+      if (p[1].equals(bb.id)) {
+        canBeAdded = false;
+        break;
+      }
+    }
+
+    if (canBeAdded) {
+      Barmband b = new Barmband(p[1], new PVector(random(0, width), random(0, height)), barmbands, color(#000000), "inactive");
+      barmbands.add(b);
+    }
   }
 
   if (topic.equals("barmband/challenge")) {
@@ -152,22 +152,26 @@ void messageReceived(String topic, byte[] payload) {
     case "New":
       for (Barmband bb : barmbands) {
         if (p[2].equals(bb.id) || p[3].equals(bb.id)) {
-          color newCol = unhex("FF" + p[4]);
+          String red = str(p[4].charAt(0)) + str(p[4].charAt(1));
+          String green = str(p[4].charAt(2)) + str(p[4].charAt(3));
+          String blue = str(p[4].charAt(4)) + str(p[4].charAt(5));
+          color newCol = unhex("FF" + green + red + blue);
           bb.col = color(newCol);
           println("changed " + bb.id + " to " + newCol);
         }
       }
       break;
 
+    case "Pair":
     case "Abort":
       for (Barmband bb : barmbands) {
-        if (p[1].equals(bb.id)) {
-          bb.col = #000000;
-        }
+        bb.col = #000000;
       }
+      break;
     }
   }
 }
+
 
 void connectionLost() {
   println("connection lost");
