@@ -6,6 +6,8 @@ Barmband is a wearable wristband designed to gamify social interactions. The con
 
 ## Project structure
 
+`documentation` contains the presentation and project report
+
 `src` and `include` contain the Barmband firmware (PlatformIO/Arduino) [(instructions)](https://barmband.fb3pool.hs-flensburg.de/docs/guides/flashing/)
 
 `bandcommand` contains the management software (Go) [(instructions)](https://barmband.fb3pool.hs-flensburg.de/docs/guides/management-software/)
