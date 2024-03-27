@@ -1,6 +1,6 @@
 # Barmband
 
-Link: https://barmband.fb3pool.hs-flensburg.de/
+Link: https://barm.band/
 
 Barmband is a wearable wristband designed to gamify social interactions. The concept is driven by the often daunting task of starting conversations in bars and pubs, where socialising is the lifeblood. Barmband offers an innovative solution - a fun, engaging tool that acts as an icebreaker in these social environments.
 
@@ -8,11 +8,11 @@ Barmband is a wearable wristband designed to gamify social interactions. The con
 
 `documentation` contains the presentation and project report
 
-`src` and `include` contain the Barmband firmware (PlatformIO/Arduino) [(instructions)](https://barmband.fb3pool.hs-flensburg.de/docs/guides/flashing/)
+`src` and `include` contain the Barmband firmware (PlatformIO/Arduino) [(instructions)](https://barm.band/docs/guides/flashing/)
 
-`bandcommand` contains the management software (Go) [(instructions)](https://barmband.fb3pool.hs-flensburg.de/docs/guides/management-software/)
+`bandcommand` contains the management software (Go) [(instructions)](https://barm.band/docs/guides/management-software/)
 
-`broker` contains a Docker compose setup to run a MQTT broker [(instructions)](https://barmband.fb3pool.hs-flensburg.de/docs/guides/management-software/#mqtt-broker)
+`broker` contains a Docker compose setup to run a MQTT broker [(instructions)](https://barm.band/docs/guides/management-software/#mqtt-broker)
 
 `ui_app` contains a Graphical user interface, visualizing the Barmbands (Processing)
 
@@ -20,9 +20,9 @@ Barmband is a wearable wristband designed to gamify social interactions. The con
 
 ## Useful Links
 
-- Project description: https://barmband.fb3pool.hs-flensburg.de/project/
-- Installation guide: https://barmband.fb3pool.hs-flensburg.de/docs/guides/get-started/
-- Lookbook: https://barmband.fb3pool.hs-flensburg.de/lookbook/
+- Project description: https://barm.band/project/
+- Installation guide: https://barm.band/docs/guides/get-started/
+- Lookbook: https://barm.band/lookbook/
 
 [Graphical messaging and communication overview](https://www.tldraw.com/v/N9df8NquTPFi5-Oo25JAq?viewport=-170,48,1920,963&page=page:page)
 
