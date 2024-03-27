@@ -1,5 +1,5 @@
 title = "B"
-baseurl = "https://streamingtime.github.io/Barmband/"
+baseurl = "https://barm.band/"
 canonifyURLs = false
 disableAliases = true
 disableHugoGeneratorInject = true
