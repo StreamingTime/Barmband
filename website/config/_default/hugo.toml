@@ -1,5 +1,5 @@
 title = "B"
-baseurl = "https://barmband.fb3pool.hs-flensburg.de/"
+baseurl = "https://streamingtime.github.io/Barmband/"
 canonifyURLs = false
 disableAliases = true
 disableHugoGeneratorInject = true
