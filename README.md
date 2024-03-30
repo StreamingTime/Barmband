@@ -16,7 +16,7 @@ Barmband is a wearable wristband designed to gamify social interactions. The con
 
 `ui_app` contains a Graphical user interface, visualizing the Barmbands (Processing)
 
-`website` contains sources for https://barmband.fb3pool.hs-flensburg.de (generated with Hugo)
+`website` contains sources for https://www.barm.band/ (generated with Hugo)
 
 ## Useful Links
 
